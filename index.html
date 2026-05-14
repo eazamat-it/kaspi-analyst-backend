@@ -630,7 +630,10 @@ async function run() {
     try {
         const r = await fetch(`${API}/analyze`, {
             method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({query:q})
+            body: JSON.stringify({
+    query: q,
+    token: (await sb.auth.getSession()).data.session?.access_token || null
+})
         });
         if (!r.ok) throw new Error(`Ошибка сервера ${r.status}`);
         D = await r.json();
