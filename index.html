@@ -26,8 +26,6 @@ th{padding:10px 12px;text-align:left;color:#4b5563;font-size:10px;font-weight:70
 td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 .score-bar{height:6px;border-radius:3px;background:#1e2a3a;margin-top:4px}
 .score-fill{height:100%;border-radius:3px;transition:width .6s ease}
-
-/* Auth modal */
 .modal-overlay{position:fixed;inset:0;background:#000000aa;display:flex;align-items:center;justify-content:center;z-index:1000}
 .modal{background:#111827;border:1px solid #1e2a3a;border-radius:16px;padding:32px;width:100%;max-width:400px;margin:16px}
 .modal h2{font-size:20px;font-weight:900;margin-bottom:6px}
@@ -43,20 +41,20 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 .auth-tab.active{color:#f97316;border-bottom-color:#f97316}
 .msg-success{background:#10b98120;border:1px solid #10b98140;color:#10b981;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
 .msg-error{background:#ef444420;border:1px solid #ef444440;color:#ef4444;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
-
-/* User bar */
 .user-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;font-size:12px}
 .user-bar .email{color:#9ca3af;flex:1}
 .user-bar .limit{color:#f97316;font-weight:700}
 .btn-logout{background:transparent;border:1px solid #1e2a3a;color:#6b7280;border-radius:8px;padding:4px 12px;font-size:11px;cursor:pointer}
 .btn-logout:hover{border-color:#ef4444;color:#ef4444}
 .btn-login{background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:8px;padding:6px 16px;font-size:12px;cursor:pointer;border:none}
+.forgot-link{text-align:right;margin-bottom:12px;margin-top:-4px}
+.forgot-link span{color:#6b7280;font-size:11px;cursor:pointer}
+.forgot-link span:hover{color:#f97316}
 </style>
 </head>
 <body>
 <div style="max-width:1080px;margin:0 auto;padding:16px">
 
-<!-- Header -->
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 0;border-bottom:1px solid #1e2a3a">
   <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff">M</div>
   <span style="font-weight:900;font-size:20px;flex:1">Market<span style="color:#f97316">Analyst</span> <span style="color:#6b7280;font-size:14px;font-weight:400">KZ</span></span>
@@ -108,20 +106,34 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 <!-- Auth Modal -->
 <div id="authModal" class="modal-overlay" style="display:none">
   <div class="modal">
-    <h2>Войдите в аккаунт</h2>
-    <p>Бесплатно: 3 анализа в день</p>
-    <div class="auth-tabs">
-      <div class="auth-tab active" onclick="switchTab('login')">Вход</div>
-      <div class="auth-tab" onclick="switchTab('register')">Регистрация</div>
+    <div id="authView">
+      <h2>Войдите в аккаунт</h2>
+      <p>Бесплатно: 3 анализа в день</p>
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="switchTab('login')">Вход</div>
+        <div class="auth-tab" onclick="switchTab('register')">Регистрация</div>
+      </div>
+      <div id="authMsg"></div>
+      <input class="auth-input" id="authEmail" type="email" placeholder="Email адрес"/>
+      <input class="auth-input" id="authPass" type="password" placeholder="Пароль" onkeydown="if(event.key==='Enter')doAuth()"/>
+      <div id="forgotLink" class="forgot-link">
+        <span onclick="showForgot()">Забыли пароль?</span>
+      </div>
+      <div id="authNameWrap" style="display:none">
+        <input class="auth-input" id="authName" type="text" placeholder="Ваше имя (необязательно)"/>
+      </div>
+      <button class="btn-primary" id="authBtn" onclick="doAuth()">Войти</button>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
     </div>
-    <div id="authMsg"></div>
-    <input class="auth-input" id="authEmail" type="email" placeholder="Email адрес"/>
-    <input class="auth-input" id="authPass" type="password" placeholder="Пароль"/>
-    <div id="authNameWrap" style="display:none">
-      <input class="auth-input" id="authName" type="text" placeholder="Ваше имя (необязательно)"/>
+
+    <div id="forgotView" style="display:none">
+      <h2>Сброс пароля</h2>
+      <p>Введите ваш email — отправим ссылку для сброса пароля</p>
+      <div id="forgotMsg"></div>
+      <input class="auth-input" id="forgotEmail" type="email" placeholder="Email адрес"/>
+      <button class="btn-primary" onclick="doForgot()">Отправить ссылку</button>
+      <button class="btn-secondary" onclick="showLogin()">← Назад</button>
     </div>
-    <button class="btn-primary" id="authBtn" onclick="doAuth()">Войти</button>
-    <button class="btn-secondary" onclick="closeModal()">Отмена</button>
   </div>
 </div>
 
@@ -136,18 +148,18 @@ let D = null;
 let currentUser = null;
 let authMode = 'login';
 
-// Пингуем сервер при загрузке
 fetch(`${API}/`).catch(()=>{});
 
-// Инициализация
 async function init() {
     const { data: { session } } = await sb.auth.getSession();
-    if (session) {
-        currentUser = session.user;
+    if (session) currentUser = session.user;
+    renderUserBar();
+
+    // Слушаем изменения сессии
+    sb.auth.onAuthStateChange((_event, session) => {
+        currentUser = session?.user || null;
         renderUserBar();
-    } else {
-        renderUserBar();
-    }
+    });
 }
 
 function renderUserBar() {
@@ -173,9 +185,7 @@ function getUsedToday() {
 
 function incrementUsed() {
     const key = `ma_used_${new Date().toDateString()}_${currentUser?.id || 'guest'}`;
-    const val = getUsedToday() + 1;
-    localStorage.setItem(key, val);
-    return val;
+    localStorage.setItem(key, getUsedToday() + 1);
 }
 
 function show(id) {
@@ -192,7 +202,6 @@ async function run() {
     const q = document.getElementById('q').value.trim();
     if (!q) return;
 
-    // Проверка лимита
     if (!currentUser) {
         const used = getUsedToday();
         if (used >= FREE_LIMIT) {
@@ -221,14 +230,28 @@ async function run() {
     }
 }
 
-// Auth functions
+// Auth
 function openModal() {
     document.getElementById('authModal').style.display = 'flex';
+    showLogin();
 }
 
 function closeModal() {
     document.getElementById('authModal').style.display = 'none';
+}
+
+function showLogin() {
+    document.getElementById('authView').style.display = 'block';
+    document.getElementById('forgotView').style.display = 'none';
     document.getElementById('authMsg').innerHTML = '';
+}
+
+function showForgot() {
+    document.getElementById('authView').style.display = 'none';
+    document.getElementById('forgotView').style.display = 'block';
+    document.getElementById('forgotMsg').innerHTML = '';
+    const email = document.getElementById('authEmail').value;
+    if (email) document.getElementById('forgotEmail').value = email;
 }
 
 function switchTab(mode) {
@@ -238,6 +261,7 @@ function switchTab(mode) {
     });
     document.getElementById('authBtn').textContent = mode === 'login' ? 'Войти' : 'Зарегистрироваться';
     document.getElementById('authNameWrap').style.display = mode === 'register' ? 'block' : 'none';
+    document.getElementById('forgotLink').style.display = mode === 'login' ? 'block' : 'none';
     document.getElementById('authMsg').innerHTML = '';
 }
 
@@ -254,15 +278,41 @@ async function doAuth() {
 
     if (authMode === 'login') {
         const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-        if (error) { showMsg(error.message, 'error'); document.getElementById('authBtn').textContent = 'Войти'; return; }
+        if (error) {
+            showMsg('Неверный email или пароль', 'error');
+            document.getElementById('authBtn').textContent = 'Войти';
+            return;
+        }
         currentUser = data.user;
         closeModal();
         renderUserBar();
     } else {
-        const { data, error } = await sb.auth.signUp({ email, password: pass });
-        if (error) { showMsg(error.message, 'error'); document.getElementById('authBtn').textContent = 'Зарегистрироваться'; return; }
+        const { error } = await sb.auth.signUp({ email, password: pass });
+        if (error) {
+            showMsg(error.message, 'error');
+            document.getElementById('authBtn').textContent = 'Зарегистрироваться';
+            return;
+        }
         showMsg('✅ Проверьте почту и подтвердите email!', 'success');
         document.getElementById('authBtn').textContent = 'Зарегистрироваться';
+    }
+}
+
+async function doForgot() {
+    const email = document.getElementById('forgotEmail').value.trim();
+    if (!email) {
+        document.getElementById('forgotMsg').innerHTML = '<div class="msg-error">Введите email</div>';
+        return;
+    }
+
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://marketanalyst.kz'
+    });
+
+    if (error) {
+        document.getElementById('forgotMsg').innerHTML = `<div class="msg-error">${error.message}</div>`;
+    } else {
+        document.getElementById('forgotMsg').innerHTML = '<div class="msg-success">✅ Ссылка отправлена! Проверьте почту.</div>';
     }
 }
 
@@ -272,7 +322,7 @@ async function logout() {
     renderUserBar();
 }
 
-// Result rendering
+// Results
 function scoreColor(v, invert=false) {
     const val = invert ? (100-v) : v;
     if (val >= 70) return '#10b981';
