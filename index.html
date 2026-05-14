@@ -51,8 +51,6 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 .forgot-link{text-align:right;margin-bottom:12px;margin-top:-4px}
 .forgot-link span{color:#6b7280;font-size:11px;cursor:pointer}
 .forgot-link span:hover{color:#f97316}
-
-/* Password strength */
 .pass-wrap{position:relative;margin-bottom:4px}
 .pass-wrap .auth-input{margin-bottom:0}
 .pass-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#6b7280;font-size:16px;user-select:none}
@@ -69,57 +67,55 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 </head>
 <body>
 <div style="max-width:1080px;margin:0 auto;padding:16px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 0;border-bottom:1px solid #1e2a3a">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff">M</div>
+    <span style="font-weight:900;font-size:20px;flex:1">Market<span style="color:#f97316">Analyst</span> <span style="color:#6b7280;font-size:14px;font-weight:400">KZ</span></span>
+    <div id="userBar"></div>
+  </div>
 
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 0;border-bottom:1px solid #1e2a3a">
-  <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff">M</div>
-  <span style="font-weight:900;font-size:20px;flex:1">Market<span style="color:#f97316">Analyst</span> <span style="color:#6b7280;font-size:14px;font-weight:400">KZ</span></span>
-  <div id="userBar"></div>
-</div>
+  <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">Анализ ниш <span style="color:#f97316">казахстанского рынка</span></h1>
+  <p style="color:#4b5563;margin-bottom:4px;font-size:13px">Введите товар → AI анализирует нишу, цены, маржу и конкурентов</p>
+  <p style="color:#374151;margin-bottom:16px;font-size:11px">* Данные генерируются AI на основе анализа рынка Казахстана</p>
 
-<h1 style="font-weight:900;font-size:22px;margin-bottom:6px">Анализ ниш <span style="color:#f97316">казахстанского рынка</span></h1>
-<p style="color:#4b5563;margin-bottom:4px;font-size:13px">Введите товар → AI анализирует нишу, цены, маржу и конкурентов</p>
-<p style="color:#374151;margin-bottom:16px;font-size:11px">* Данные генерируются AI на основе анализа рынка Казахстана</p>
+  <div style="display:flex;gap:10px;margin-bottom:10px">
+    <input id="q" placeholder="Например: термос, bluetooth наушники, детские игрушки..." onkeydown="if(event.key==='Enter')run()"/>
+    <button onclick="run()" style="height:44px;padding:0 24px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;white-space:nowrap;box-shadow:0 4px 16px #f9731640">Анализировать →</button>
+  </div>
 
-<div style="display:flex;gap:10px;margin-bottom:10px">
-  <input id="q" placeholder="Например: термос, bluetooth наушники, детские игрушки..." onkeydown="if(event.key==='Enter')run()"/>
-  <button onclick="run()" style="height:44px;padding:0 24px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;white-space:nowrap;box-shadow:0 4px 16px #f9731640">Анализировать →</button>
-</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px">
+    <span style="color:#374151;font-size:11px;padding-top:3px">Быстрый старт:</span>
+    <button class="qbtn" onclick="setQ('Термос')">Термос</button>
+    <button class="qbtn" onclick="setQ('Bluetooth наушники')">Bluetooth наушники</button>
+    <button class="qbtn" onclick="setQ('Чехол iPhone')">Чехол iPhone</button>
+    <button class="qbtn" onclick="setQ('Фитнес резинки')">Фитнес резинки</button>
+    <button class="qbtn" onclick="setQ('LED лампа')">LED лампа</button>
+    <button class="qbtn" onclick="setQ('Power bank')">Power bank</button>
+    <button class="qbtn" onclick="setQ('Маска для лица')">Маска для лица</button>
+  </div>
 
-<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px">
-  <span style="color:#374151;font-size:11px;padding-top:3px">Быстрый старт:</span>
-  <button class="qbtn" onclick="setQ('Термос')">Термос</button>
-  <button class="qbtn" onclick="setQ('Bluetooth наушники')">Bluetooth наушники</button>
-  <button class="qbtn" onclick="setQ('Чехол iPhone')">Чехол iPhone</button>
-  <button class="qbtn" onclick="setQ('Фитнес резинки')">Фитнес резинки</button>
-  <button class="qbtn" onclick="setQ('LED лампа')">LED лампа</button>
-  <button class="qbtn" onclick="setQ('Power bank')">Power bank</button>
-  <button class="qbtn" onclick="setQ('Маска для лица')">Маска для лица</button>
-</div>
-
-<div id="loading" style="display:none;text-align:center;padding:50px 20px" class="card">
-  <div style="font-size:36px;margin-bottom:12px;animation:pulse 1.4s ease infinite">🤖</div>
-  <div style="color:#f97316;font-weight:800;font-size:15px;margin-bottom:6px">Анализируем рынок...</div>
-  <div style="color:#374151;font-size:12px">AI изучает нишу и готовит рекомендации</div>
-</div>
-
-<div id="err" style="display:none" class="card">
-  <div style="color:#ef4444;font-weight:700;margin-bottom:6px">⚠️ Ошибка</div>
-  <div id="errmsg" style="color:#6b7280;font-size:13px;margin-bottom:10px"></div>
-  <button onclick="run()" style="padding:8px 16px;background:#f97316;color:#fff;border-radius:8px">🔄 Попробовать снова</button>
-</div>
-
-<div id="result" style="display:none"></div>
-
-<div id="empty" style="text-align:center;padding:60px 20px">
-  <div style="font-size:52px;margin-bottom:12px;filter:grayscale(1) opacity(.3)">📊</div>
-  <div style="font-size:15px;font-weight:700;color:#374151">Введите товар для анализа</div>
-  <div style="font-size:12px;margin-top:6px;color:#1e2a3a">AI проанализирует нишу казахстанского рынка</div>
-</div>
+  <div id="loading" style="display:none;text-align:center;padding:50px 20px" class="card">
+    <div style="font-size:36px;margin-bottom:12px;animation:pulse 1.4s ease infinite">🤖</div>
+    <div style="color:#f97316;font-weight:800;font-size:15px;margin-bottom:6px">Анализируем рынок...</div>
+    <div style="color:#374151;font-size:12px">AI изучает нишу и готовит рекомендации</div>
+  </div>
+  <div id="err" style="display:none" class="card">
+    <div style="color:#ef4444;font-weight:700;margin-bottom:6px">⚠️ Ошибка</div>
+    <div id="errmsg" style="color:#6b7280;font-size:13px;margin-bottom:10px"></div>
+    <button onclick="run()" style="padding:8px 16px;background:#f97316;color:#fff;border-radius:8px">🔄 Попробовать снова</button>
+  </div>
+  <div id="result" style="display:none"></div>
+  <div id="empty" style="text-align:center;padding:60px 20px">
+    <div style="font-size:52px;margin-bottom:12px;filter:grayscale(1) opacity(.3)">📊</div>
+    <div style="font-size:15px;font-weight:700;color:#374151">Введите товар для анализа</div>
+    <div style="font-size:12px;margin-top:6px;color:#1e2a3a">AI проанализирует нишу казахстанского рынка</div>
+  </div>
 </div>
 
 <!-- Auth Modal -->
 <div id="authModal" class="modal-overlay" style="display:none">
   <div class="modal">
+
+    <!-- Вход / Регистрация -->
     <div id="authView">
       <h2>Войдите в аккаунт</h2>
       <p>Бесплатно: 3 анализа в день</p>
@@ -129,13 +125,10 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
       </div>
       <div id="authMsg"></div>
       <input class="auth-input" id="authEmail" type="email" placeholder="Email адрес"/>
-
       <div class="pass-wrap">
         <input class="auth-input" id="authPass" type="password" placeholder="Пароль" oninput="onPassInput()" onkeydown="if(event.key==='Enter')doAuth()"/>
         <span class="pass-toggle" onclick="togglePass('authPass',this)">👁</span>
       </div>
-
-      <!-- Индикатор силы пароля (только при регистрации) -->
       <div id="strengthWrap" style="display:none">
         <div class="strength-bars">
           <div class="strength-bar" id="sb1"></div>
@@ -152,10 +145,7 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
           <div class="pass-rule" id="r-spec">Спецсимвол (!@#$%^&*)</div>
         </div>
       </div>
-
-      <div id="forgotLink" class="forgot-link">
-        <span onclick="showForgot()">Забыли пароль?</span>
-      </div>
+      <div id="forgotLink" class="forgot-link"><span onclick="showForgot()">Забыли пароль?</span></div>
       <div id="authNameWrap" style="display:none">
         <input class="auth-input" id="authName" type="text" placeholder="Ваше имя (необязательно)"/>
       </div>
@@ -163,6 +153,7 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
       <button class="btn-secondary" onclick="closeModal()">Отмена</button>
     </div>
 
+    <!-- Забыли пароль -->
     <div id="forgotView" style="display:none">
       <h2>Сброс пароля</h2>
       <p>Введите ваш email — отправим ссылку для сброса пароля</p>
@@ -171,6 +162,37 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
       <button class="btn-primary" onclick="doForgot()">Отправить ссылку</button>
       <button class="btn-secondary" onclick="showLogin()">← Назад</button>
     </div>
+
+    <!-- Новый пароль -->
+    <div id="newPassView" style="display:none">
+      <h2>Новый пароль</h2>
+      <p>Придумайте надёжный пароль для вашего аккаунта</p>
+      <div id="newPassMsg"></div>
+      <div class="pass-wrap">
+        <input class="auth-input" id="newPass" type="password" placeholder="Новый пароль" oninput="onNewPassInput()"/>
+        <span class="pass-toggle" onclick="togglePass('newPass',this)">👁</span>
+      </div>
+      <div class="strength-bars">
+        <div class="strength-bar" id="nsb1"></div>
+        <div class="strength-bar" id="nsb2"></div>
+        <div class="strength-bar" id="nsb3"></div>
+        <div class="strength-bar" id="nsb4"></div>
+      </div>
+      <div class="strength-label" id="nStrengthLabel" style="margin-bottom:8px"></div>
+      <div class="pass-rules" style="margin-bottom:12px">
+        <div class="pass-rule" id="nr-len">Минимум 8 символов</div>
+        <div class="pass-rule" id="nr-upper">Заглавная буква (A-Z)</div>
+        <div class="pass-rule" id="nr-lower">Строчная буква (a-z)</div>
+        <div class="pass-rule" id="nr-num">Цифра (0-9)</div>
+        <div class="pass-rule" id="nr-spec">Спецсимвол (!@#$%^&*)</div>
+      </div>
+      <div class="pass-wrap" style="margin-bottom:12px">
+        <input class="auth-input" id="newPassConfirm" type="password" placeholder="Повторите пароль" style="margin-bottom:0"/>
+        <span class="pass-toggle" onclick="togglePass('newPassConfirm',this)">👁</span>
+      </div>
+      <button class="btn-primary" id="newPassBtn" onclick="doNewPass()">Сохранить пароль</button>
+    </div>
+
   </div>
 </div>
 
@@ -186,12 +208,31 @@ let D = null, currentUser = null, authMode = 'login';
 fetch(`${API}/`).catch(()=>{});
 
 async function init() {
+    // Проверяем есть ли токен сброса пароля в URL
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery')) {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            openModal();
+            showNewPass();
+            return;
+        }
+    }
+
     const { data: { session } } = await sb.auth.getSession();
     if (session) currentUser = session.user;
     renderUserBar();
-    sb.auth.onAuthStateChange((_e, session) => {
-        currentUser = session?.user || null;
-        renderUserBar();
+
+    sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+            currentUser = session?.user || null;
+            openModal();
+            showNewPass();
+        } else {
+            currentUser = session?.user || null;
+            renderUserBar();
+        }
     });
 }
 
@@ -231,9 +272,7 @@ async function run() {
     const q = document.getElementById('q').value.trim();
     if (!q) return;
     if (!currentUser && getUsedToday() >= FREE_LIMIT) {
-        openModal();
-        showMsg('Бесплатный лимит исчерпан. Войдите для продолжения.','error');
-        return;
+        openModal(); showMsg('Бесплатный лимит исчерпан. Войдите для продолжения.','error'); return;
     }
     show('loading');
     try {
@@ -251,124 +290,139 @@ async function run() {
     }
 }
 
-// Password strength
+// Password helpers
 function checkPass(p) {
     return {
-        len:    p.length >= 8,
-        upper:  /[A-Z]/.test(p),
-        lower:  /[a-z]/.test(p),
-        num:    /[0-9]/.test(p),
-        spec:   /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p)
+        len: p.length>=8, upper:/[A-Z]/.test(p), lower:/[a-z]/.test(p),
+        num:/[0-9]/.test(p), spec:/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p)
     };
 }
-
-function onPassInput() {
-    if (authMode !== 'register') return;
-    const p = document.getElementById('authPass').value;
+function updateStrength(p, prefix) {
     const c = checkPass(p);
     const score = Object.values(c).filter(Boolean).length;
-
-    ['r-len','r-upper','r-lower','r-num','r-spec'].forEach((id, i) => {
-        const keys = ['len','upper','lower','num','spec'];
-        document.getElementById(id).className = 'pass-rule' + (c[keys[i]]?' ok':'');
+    const keys = ['len','upper','lower','num','spec'];
+    const ids = prefix==='n' ? ['nr-len','nr-upper','nr-lower','nr-num','nr-spec'] : ['r-len','r-upper','r-lower','r-num','r-spec'];
+    ids.forEach((id,i) => {
+        document.getElementById(id).className = 'pass-rule'+(c[keys[i]]?' ok':'');
     });
-
     const colors = ['','#ef4444','#f59e0b','#f97316','#10b981','#10b981'];
     const labels = ['','Очень слабый','Слабый','Средний','Сильный','Очень сильный'];
-    for (let i=1;i<=4;i++) {
-        document.getElementById('sb'+i).style.background = i<=score ? colors[score] : '#1e2a3a';
+    for(let i=1;i<=4;i++) {
+        document.getElementById(prefix+'sb'+i).style.background = i<=score?colors[score]:'#1e2a3a';
     }
-    document.getElementById('strengthLabel').textContent = p ? labels[score] : '';
-    document.getElementById('strengthLabel').style.color = colors[score];
-
-    // Блокируем кнопку если пароль слабый
-    document.getElementById('authBtn').disabled = p.length > 0 && score < 3;
+    const lbl = document.getElementById(prefix==='n'?'nStrengthLabel':'strengthLabel');
+    lbl.textContent = p ? labels[score] : '';
+    lbl.style.color = colors[score];
+    return score;
+}
+function onPassInput() {
+    if(authMode!=='register') return;
+    const score = updateStrength(document.getElementById('authPass').value, '');
+    document.getElementById('authBtn').disabled = document.getElementById('authPass').value.length>0 && score<3;
+}
+function onNewPassInput() {
+    updateStrength(document.getElementById('newPass').value, 'n');
+}
+function togglePass(id, btn) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type==='password'?'text':'password';
+    btn.textContent = inp.type==='password'?'👁':'🙈';
 }
 
-function togglePass(inputId, btn) {
-    const inp = document.getElementById(inputId);
-    if (inp.type === 'password') { inp.type='text'; btn.textContent='🙈'; }
-    else { inp.type='password'; btn.textContent='👁'; }
-}
-
-// Auth modal
-function openModal() { document.getElementById('authModal').style.display='flex'; showLogin(); }
+// Modal views
+function openModal() { document.getElementById('authModal').style.display='flex'; }
 function closeModal() { document.getElementById('authModal').style.display='none'; }
-
 function showLogin() {
-    document.getElementById('authView').style.display='block';
-    document.getElementById('forgotView').style.display='none';
+    ['authView','forgotView','newPassView'].forEach(id => {
+        document.getElementById(id).style.display = id==='authView'?'block':'none';
+    });
     document.getElementById('authMsg').innerHTML='';
 }
 function showForgot() {
-    document.getElementById('authView').style.display='none';
-    document.getElementById('forgotView').style.display='block';
+    ['authView','forgotView','newPassView'].forEach(id => {
+        document.getElementById(id).style.display = id==='forgotView'?'block':'none';
+    });
     document.getElementById('forgotMsg').innerHTML='';
     const email = document.getElementById('authEmail').value;
     if(email) document.getElementById('forgotEmail').value=email;
 }
+function showNewPass() {
+    ['authView','forgotView','newPassView'].forEach(id => {
+        document.getElementById(id).style.display = id==='newPassView'?'block':'none';
+    });
+    document.getElementById('newPassMsg').innerHTML='';
+}
 
 function switchTab(mode) {
-    authMode = mode;
+    authMode=mode;
     document.querySelectorAll('.auth-tab').forEach((t,i) => {
         t.classList.toggle('active',(i===0&&mode==='login')||(i===1&&mode==='register'));
     });
     document.getElementById('authBtn').textContent = mode==='login'?'Войти':'Зарегистрироваться';
-    document.getElementById('authBtn').disabled = false;
+    document.getElementById('authBtn').disabled=false;
     document.getElementById('authNameWrap').style.display = mode==='register'?'block':'none';
     document.getElementById('forgotLink').style.display = mode==='login'?'block':'none';
     document.getElementById('strengthWrap').style.display = mode==='register'?'block':'none';
     document.getElementById('authMsg').innerHTML='';
     document.getElementById('authPass').value='';
-    onPassInput();
 }
-
-function showMsg(text, type) {
+function showMsg(text,type) {
     document.getElementById('authMsg').innerHTML=`<div class="msg-${type}">${text}</div>`;
 }
 
 async function doAuth() {
-    const email = document.getElementById('authEmail').value.trim();
-    const pass  = document.getElementById('authPass').value;
-    if (!email||!pass) { showMsg('Заполните все поля','error'); return; }
-
-    if (authMode==='register') {
-        const c = checkPass(pass);
-        const score = Object.values(c).filter(Boolean).length;
-        if (score < 3) { showMsg('Пароль слишком слабый. Используйте минимум 8 символов, цифры и буквы.','error'); return; }
+    const email=document.getElementById('authEmail').value.trim();
+    const pass=document.getElementById('authPass').value;
+    if(!email||!pass){showMsg('Заполните все поля','error');return;}
+    if(authMode==='register'){
+        const score=Object.values(checkPass(pass)).filter(Boolean).length;
+        if(score<3){showMsg('Пароль слишком слабый','error');return;}
     }
-
     document.getElementById('authBtn').textContent='...';
-
-    if (authMode==='login') {
-        const {data, error} = await sb.auth.signInWithPassword({email, password:pass});
-        if (error) { showMsg('Неверный email или пароль','error'); document.getElementById('authBtn').textContent='Войти'; return; }
-        currentUser=data.user; closeModal(); renderUserBar();
+    if(authMode==='login'){
+        const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+        if(error){showMsg('Неверный email или пароль','error');document.getElementById('authBtn').textContent='Войти';return;}
+        currentUser=data.user;closeModal();renderUserBar();
     } else {
-        const {error} = await sb.auth.signUp({email, password:pass});
-        if (error) { showMsg(error.message,'error'); document.getElementById('authBtn').textContent='Зарегистрироваться'; return; }
+        const {error}=await sb.auth.signUp({email,password:pass});
+        if(error){showMsg(error.message,'error');document.getElementById('authBtn').textContent='Зарегистрироваться';return;}
         showMsg('✅ Проверьте почту и подтвердите email!','success');
         document.getElementById('authBtn').textContent='Зарегистрироваться';
     }
 }
 
 async function doForgot() {
-    const email = document.getElementById('forgotEmail').value.trim();
-    if (!email) { document.getElementById('forgotMsg').innerHTML='<div class="msg-error">Введите email</div>'; return; }
-    const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo:'https://marketanalyst.kz'});
-    document.getElementById('forgotMsg').innerHTML = error
-        ? `<div class="msg-error">${error.message}</div>`
-        : '<div class="msg-success">✅ Ссылка отправлена! Проверьте почту.</div>';
+    const email=document.getElementById('forgotEmail').value.trim();
+    if(!email){document.getElementById('forgotMsg').innerHTML='<div class="msg-error">Введите email</div>';return;}
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://marketanalyst.kz'});
+    document.getElementById('forgotMsg').innerHTML=error
+        ?`<div class="msg-error">${error.message}</div>`
+        :'<div class="msg-success">✅ Ссылка отправлена! Проверьте почту.</div>';
 }
 
-async function logout() { await sb.auth.signOut(); currentUser=null; renderUserBar(); }
+async function doNewPass() {
+    const pass = document.getElementById('newPass').value;
+    const confirm = document.getElementById('newPassConfirm').value;
+    if(!pass||!confirm){document.getElementById('newPassMsg').innerHTML='<div class="msg-error">Заполните все поля</div>';return;}
+    if(pass!==confirm){document.getElementById('newPassMsg').innerHTML='<div class="msg-error">Пароли не совпадают</div>';return;}
+    const score=Object.values(checkPass(pass)).filter(Boolean).length;
+    if(score<3){document.getElementById('newPassMsg').innerHTML='<div class="msg-error">Пароль слишком слабый</div>';return;}
+    document.getElementById('newPassBtn').textContent='...';
+    const {error}=await sb.auth.updateUser({password:pass});
+    if(error){
+        document.getElementById('newPassMsg').innerHTML=`<div class="msg-error">${error.message}</div>`;
+        document.getElementById('newPassBtn').textContent='Сохранить пароль';
+    } else {
+        document.getElementById('newPassMsg').innerHTML='<div class="msg-success">✅ Пароль успешно изменён!</div>';
+        setTimeout(()=>{closeModal();renderUserBar();},1500);
+    }
+}
+
+async function logout(){await sb.auth.signOut();currentUser=null;renderUserBar();}
 
 // Results
-function scoreColor(v,invert=false) {
-    const val=invert?(100-v):v;
-    return val>=70?'#10b981':val>=40?'#f59e0b':'#ef4444';
-}
-function scoreBar(label,value,invert=false) {
+function scoreColor(v,invert=false){const val=invert?(100-v):v;return val>=70?'#10b981':val>=40?'#f59e0b':'#ef4444';}
+function scoreBar(label,value,invert=false){
     const v=Number(value)||0;
     return `<div style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
@@ -379,9 +433,9 @@ function scoreBar(label,value,invert=false) {
     </div>`;
 }
 
-function renderResult(tabId) {
-    if(!D) return;
-    const stats=D.stats||{}, competitors=Array.isArray(D.competitors)?D.competitors:[], ai=D.ai||{};
+function renderResult(tabId){
+    if(!D)return;
+    const stats=D.stats||{},competitors=Array.isArray(D.competitors)?D.competitors:[],ai=D.ai||{};
     const hasAI=ai&&!ai.error&&typeof ai.verdict==='string'&&ai.verdict.length>0;
     const verdict=hasAI?ai.verdict:'—';
     const verdictText=hasAI?(ai.verdictText||''):'AI-анализ недоступен.';
