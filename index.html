@@ -144,24 +144,15 @@ async function run() {
     }
 }
 function renderResult(tabId) {
-    // 1. Извлекаем ВСЕ данные из объекта D, включая query и fromCache
     const { ai, stats, competitors, query, fromCache } = D || {};
-    
-    // Защита: создаем пустые объекты, если бэкенд прислал пустоту
     const AI = ai || {};
     const STATS = stats || { priceRanges: {}, totalFound: 0, avgPrice: 0, minPrice: 0, maxPrice: 0, weakSellers: 0, strongSellers: 0, avgReviews: 0 };
     const COMPS = competitors || [];
-    
-    // Форматирование чисел
     const fmt = (v) => v ? v.toLocaleString('ru-RU') : '0';
-    
-    // Цветовая схема вердикта
     const verdict = AI.verdict || 'АНАЛИЗ...';
     const vc = verdict === 'ВОЙТИ' ? '#10b981' : verdict === 'ОСТОРОЖНО' ? '#f59e0b' : '#ef4444';
-    
     const h = document.getElementById('res');
     
-    // Вспомогательная функция для отрисовки "колец" статистики
     const gaugeHTML = (v, l, c) => {
         const val = v || 0;
         const r = 34, cx = 40, cy = 40, circ = 2 * Math.PI * r, dash = (Math.max(0, Math.min(100, val)) / 100) * circ;
@@ -176,7 +167,6 @@ function renderResult(tabId) {
         </div>`;
     };
 
-    // Собираем шапку результата
     h.innerHTML = `
         <div class="card" style="border-left:4px solid ${vc};margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -266,7 +256,7 @@ function renderResult(tabId) {
         </div>`;
     } else if(tabId==='rivals'){
         tabContent = `<div style="display:flex;flex-direction:column;gap:12px">
-          <div style="color:#4b5563;font-size:11px">✅ Реальные продавцы с Kaspi.kz — кликните на товар чтобы открыть</div>
+          <div style="color:#4b5563;font-size:11px">✅ Реальные продавцы с Kaspi.kz</div>
           <div class="card" style="padding:0;overflow:hidden">
             <div style="overflow-x:auto">
               <table>
