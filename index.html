@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KaspiAnalyst — Анализ ниш Kaspi.kz</title>
+<title>MarketAnalyst KZ — Анализ ниш казахстанского рынка</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#060b14;color:#e2e8f0;font-family:'Segoe UI',sans-serif;min-height:100vh}
@@ -11,7 +11,6 @@ input,select{background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;colo
 input:focus{border-color:#f97316}
 button{cursor:pointer;border:none;font-weight:700;font-size:13px;font-family:'Segoe UI',sans-serif}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .card{background:linear-gradient(145deg,#111827,#0f172a);border:1px solid #1e2a3a;border-radius:14px;padding:18px}
 .pill{border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;display:inline-block}
 .tab{border-radius:9px;padding:7px 16px;font-weight:700;font-size:12px;transition:all .15s;border:1px solid #1e2a3a;background:#0f172a;color:#6b7280;margin-right:5px}
@@ -31,17 +30,18 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 <div style="max-width:1080px;margin:0 auto;padding:16px">
 
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:12px 0;border-bottom:1px solid #1e2a3a">
-  <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff">К</div>
-  <span style="font-weight:900;font-size:20px">Kaspi<span style="color:#f97316">Analyst</span></span>
-  <span class="pill" style="background:#10b98118;color:#10b981;border:1px solid #10b98130;font-size:9px">РЕАЛЬНЫЕ ДАННЫЕ</span>
+  <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff">M</div>
+  <span style="font-weight:900;font-size:20px">Market<span style="color:#f97316">Analyst</span> <span style="color:#6b7280;font-size:14px;font-weight:400">KZ</span></span>
+  <span class="pill" style="background:#10b98118;color:#10b981;border:1px solid #10b98130;font-size:9px">AI АНАЛИЗ</span>
 </div>
 
-<h1 style="font-weight:900;font-size:22px;margin-bottom:6px">Анализ ниш <span style="color:#f97316">Kaspi.kz</span></h1>
-<p style="color:#4b5563;margin-bottom:16px;font-size:13px">Введите товар → реальные данные с Kaspi + AI анализ ниши, цен, маржи</p>
+<h1 style="font-weight:900;font-size:22px;margin-bottom:6px">Анализ ниш <span style="color:#f97316">казахстанского рынка</span></h1>
+<p style="color:#4b5563;margin-bottom:4px;font-size:13px">Введите товар → AI анализирует нишу, цены, маржу и конкурентов</p>
+<p style="color:#374151;margin-bottom:16px;font-size:11px">* Данные генерируются AI на основе анализа рынка Казахстана</p>
 
 <div style="display:flex;gap:10px;margin-bottom:10px">
   <input id="q" placeholder="Например: термос, bluetooth наушники, детские игрушки..." onkeydown="if(event.key==='Enter')run()"/>
-  <button id="btn" onclick="run()" style="height:44px;padding:0 24px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;white-space:nowrap;box-shadow:0 4px 16px #f9731640">Анализировать →</button>
+  <button onclick="run()" style="height:44px;padding:0 24px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;white-space:nowrap;box-shadow:0 4px 16px #f9731640">Анализировать →</button>
 </div>
 
 <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px">
@@ -57,8 +57,8 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 
 <div id="loading" style="display:none;text-align:center;padding:50px 20px" class="card">
   <div style="font-size:36px;margin-bottom:12px;animation:pulse 1.4s ease infinite">🤖</div>
-  <div id="lstep" style="color:#f97316;font-weight:800;font-size:15px;margin-bottom:6px">Обработка...</div>
-  <div style="color:#374151;font-size:12px">Получаем реальные данные с Kaspi.kz → AI анализирует</div>
+  <div style="color:#f97316;font-weight:800;font-size:15px;margin-bottom:6px">Анализируем рынок...</div>
+  <div style="color:#374151;font-size:12px">AI изучает нишу и готовит рекомендации</div>
 </div>
 
 <div id="err" style="display:none" class="card">
@@ -69,46 +69,47 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 
 <div id="result" style="display:none"></div>
 
-<div id="empty" style="text-align:center;padding:60px 20px;color:#1e2a3a">
-  <div style="font-size:52px;margin-bottom:12px;filter:grayscale(1) opacity(.3)">📦</div>
+<div id="empty" style="text-align:center;padding:60px 20px">
+  <div style="font-size:52px;margin-bottom:12px;filter:grayscale(1) opacity(.3)">📊</div>
   <div style="font-size:15px;font-weight:700;color:#374151">Введите товар для анализа</div>
-  <div style="font-size:12px;margin-top:6px">Данные берутся напрямую с Kaspi.kz в реальном времени</div>
+  <div style="font-size:12px;margin-top:6px;color:#1e2a3a">AI проанализирует нишу казахстанского рынка</div>
 </div>
 
 </div>
 
 <script>
-const API = 'https://kaspi-analyst-backend.onrender.com';
+const API = 'https://marketanalyst-kz.onrender.com';
 let D = null;
 
 function show(id) {
-    ['loading', 'err', 'result', 'empty'].forEach(x => {
+    ['loading','err','result','empty'].forEach(x => {
         const el = document.getElementById(x);
-        if (el) el.style.display = (x === id ? 'block' : 'none');
+        if (el) el.style.display = (x===id?'block':'none');
     });
 }
 
 function fmt(n) { return n ? Number(n).toLocaleString('ru-KZ') : '0'; }
-
 function setQ(v) { document.getElementById('q').value = v; run(); }
+
+// Пингуем сервер при загрузке страницы чтобы разбудить заранее
+fetch(`${API}/`).catch(()=>{});
 
 async function run() {
     const q = document.getElementById('q').value.trim();
     if (!q) return;
     show('loading');
-    document.getElementById('lstep').textContent = 'Получаем данные с Kaspi.kz...';
     try {
         const r = await fetch(`${API}/analyze`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ query: q })
         });
-        if (!r.ok) throw new Error(`Сервер вернул ошибку ${r.status}`);
+        if (!r.ok) throw new Error(`Ошибка сервера ${r.status}`);
         D = await r.json();
         renderResult('niche');
         show('result');
     } catch (e) {
-        document.getElementById('errmsg').textContent = e.message || 'Неизвестная ошибка. Проверьте подключение.';
+        document.getElementById('errmsg').textContent = e.message || 'Неизвестная ошибка. Попробуйте снова.';
         show('err');
     }
 }
@@ -127,33 +128,25 @@ function scoreBar(label, value) {
                 <span style="color:#9ca3af">${label}</span>
                 <span style="font-weight:700;color:${scoreColor(v)}">${v}/100</span>
             </div>
-            <div class="score-bar">
-                <div class="score-fill" style="width:${v}%;background:${scoreColor(v)}"></div>
-            </div>
+            <div class="score-bar"><div class="score-fill" style="width:${v}%;background:${scoreColor(v)}"></div></div>
         </div>`;
 }
 
 function renderResult(tabId) {
     if (!D) return;
-
-    // Безопасное извлечение данных с fallback на пустые значения
     const stats = D.stats || {};
     const competitors = Array.isArray(D.competitors) ? D.competitors : [];
     const ai = D.ai || {};
-
-    // Проверяем, есть ли реальный AI-ответ (не пустой объект и не ошибка)
     const hasAI = ai && !ai.error && typeof ai.verdict === 'string' && ai.verdict.length > 0;
 
     const verdict = hasAI ? ai.verdict : '—';
-    const verdictText = hasAI
-        ? (ai.verdictText || '')
-        : (ai.error ? 'Ошибка AI-анализа: ' + ai.error : 'AI-анализ недоступен. Ключ Anthropic API не настроен на сервере.');
+    const verdictText = hasAI ? (ai.verdictText || '') : 'AI-анализ недоступен.';
     const vc = verdict === 'ВОЙТИ' ? '#10b981' : verdict === 'НЕ ВХОДИТЬ' ? '#ef4444' : '#f59e0b';
 
-    const nicheScore  = Number(hasAI ? (ai.nicheScore        ?? stats.nicheScore        ?? 0) : (stats.nicheScore        ?? 0));
-    const demandScore = Number(hasAI ? (ai.demandScore        ?? stats.demandScore        ?? 0) : (stats.demandScore        ?? 0));
-    const marginScore = Number(hasAI ? (ai.marginScore        ?? 0) : 0);
-    const compScore   = Number(hasAI ? (ai.competitionScore   ?? stats.competitionScore   ?? 0) : (stats.competitionScore   ?? 0));
+    const nicheScore  = Number(hasAI ? (ai.nicheScore ?? stats.nicheScore ?? 0) : (stats.nicheScore ?? 0));
+    const demandScore = Number(hasAI ? (ai.demandScore ?? stats.demandScore ?? 0) : (stats.demandScore ?? 0));
+    const marginScore = Number(hasAI ? (ai.marginScore ?? 0) : 0);
+    const compScore   = Number(hasAI ? (ai.competitionScore ?? stats.competitionScore ?? 0) : (stats.competitionScore ?? 0));
 
     const optimalPrice   = hasAI && ai.optimalPrice   ? fmt(ai.optimalPrice) + ' ₸'  : '—';
     const marginPct      = hasAI && ai.marginPct      ? ai.marginPct + '%'            : '—';
@@ -164,14 +157,13 @@ function renderResult(tabId) {
         <div class="card" style="border-left:4px solid ${vc};margin-bottom:15px">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
                 <span style="font-size:22px;font-weight:900;color:${vc}">${verdict}</span>
-                ${!hasAI ? '<span class="pill" style="background:#ef444420;color:#ef4444;border:1px solid #ef444440;font-size:9px">AI НЕДОСТУПЕН</span>' : ''}
             </div>
             <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px">
             <div class="card" style="text-align:center">
-                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">НАЙДЕНО ТОВАРОВ</div>
+                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТОВАРОВ В НИШЕ</div>
                 <div style="font-size:22px;font-weight:900;color:#f97316">${stats.totalFound ?? 0}</div>
             </div>
             <div class="card" style="text-align:center">
@@ -191,15 +183,14 @@ function renderResult(tabId) {
         <div style="display:flex;gap:10px;margin-bottom:15px">
             <button class="tab ${tabId==='niche'?'on':''}" onclick="renderResult('niche')">Ниша</button>
             <button class="tab ${tabId==='rivals'?'on':''}" onclick="renderResult('rivals')">Конкуренты</button>
-        </div>
-    `;
+        </div>`;
 
     if (tabId === 'niche') {
         const opportunities = hasAI
             ? (Array.isArray(ai.freeSegments) && ai.freeSegments.length ? ai.freeSegments : (Array.isArray(ai.topOpportunities) ? ai.topOpportunities : []))
             : [];
-        const risks    = hasAI && Array.isArray(ai.topRisks)  ? ai.topRisks  : [];
-        const keywords = hasAI && Array.isArray(ai.keywords)   ? ai.keywords   : [];
+        const risks    = hasAI && Array.isArray(ai.topRisks) ? ai.topRisks : [];
+        const keywords = hasAI && Array.isArray(ai.keywords)  ? ai.keywords  : [];
 
         content += `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
@@ -213,14 +204,7 @@ function renderResult(tabId) {
             <div class="card">
                 <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">💰 ФИНАНСЫ</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                    ${[
-                        ['Оптим. цена', optimalPrice],
-                        ['Маржа', marginPct],
-                        ['Прибыль/мес.', monthlyProfit],
-                        ['Окупаемость', breakEvenUnits],
-                        ['Мин. цена', fmt(stats.minPrice) + ' ₸'],
-                        ['Макс. цена', fmt(stats.maxPrice) + ' ₸'],
-                    ].map(([l,v]) => `
+                    ${[['Оптим. цена',optimalPrice],['Маржа',marginPct],['Прибыль/мес.',monthlyProfit],['Окупаемость',breakEvenUnits],['Мин. цена',fmt(stats.minPrice)+' ₸'],['Макс. цена',fmt(stats.maxPrice)+' ₸']].map(([l,v])=>`
                         <div style="background:#060b14;border-radius:8px;padding:8px">
                             <div style="font-size:9px;color:#4b5563">${l}</div>
                             <div style="font-weight:700;font-size:13px;margin-top:2px">${v}</div>
@@ -228,42 +212,24 @@ function renderResult(tabId) {
                 </div>
             </div>
         </div>
-        ${opportunities.length ? `
-        <div class="card" style="margin-top:15px">
-            <div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:10px">✅ ВОЗМОЖНОСТИ</div>
-            ${opportunities.map(o => `<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${o}</div>`).join('')}
-        </div>` : ''}
-        ${risks.length ? `
-        <div class="card" style="margin-top:15px">
-            <div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:10px">⚠️ РИСКИ</div>
-            ${risks.map(r => `<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${r}</div>`).join('')}
-        </div>` : ''}
-        ${keywords.length ? `
-        <div class="card" style="margin-top:15px">
-            <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:10px">🔑 КЛЮЧЕВЫЕ СЛОВА</div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px">
-                ${keywords.map(k => `<span class="pill" style="background:#1e2a3a;color:#9ca3af">${k}</span>`).join('')}
-            </div>
-        </div>` : ''}
-        `;
+        ${opportunities.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:10px">✅ ВОЗМОЖНОСТИ</div>${opportunities.map(o=>`<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${o}</div>`).join('')}</div>`:''}
+        ${risks.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:10px">⚠️ РИСКИ</div>${risks.map(r=>`<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${r}</div>`).join('')}</div>`:''}
+        ${keywords.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:10px">🔑 КЛЮЧЕВЫЕ СЛОВА</div><div style="display:flex;flex-wrap:wrap;gap:6px">${keywords.map(k=>`<span class="pill" style="background:#1e2a3a;color:#9ca3af">${k}</span>`).join('')}</div></div>`:''}`;
     } else {
         content += `
         <div class="card">
-            <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🏆 ТОП КОНКУРЕНТЫ (${competitors.length})</div>
+            <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🏆 КОНКУРЕНТЫ В НИШЕ (${competitors.length})</div>
             <table>
-                <thead><tr>
-                    <th>ТОВАР</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ПРОДАВЕЦ</th>
-                </tr></thead>
+                <thead><tr><th>ТОВАР</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ПРОДАВЕЦ</th></tr></thead>
                 <tbody>
-                ${competitors.length ? competitors.map((c, i) => `
+                ${competitors.length?competitors.map((c,i)=>`
                     <tr>
-                        <td><a href="${c.url || '#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name || '—'}</a></td>
+                        <td><a href="${c.url||'#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name||'—'}</a></td>
                         <td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td>
-                        <td><span style="color:#f59e0b">★</span> ${c.rating ?? '—'}</td>
+                        <td><span style="color:#f59e0b">★</span> ${c.rating??'—'}</td>
                         <td>${fmt(c.reviews)}</td>
-                        <td style="color:#6b7280;font-size:11px">${c.seller || '—'}</td>
-                    </tr>`).join('')
-                : `<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Конкуренты не найдены</td></tr>`}
+                        <td style="color:#6b7280;font-size:11px">${c.seller||'—'}</td>
+                    </tr>`).join(''):`<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Нет данных</td></tr>`}
                 </tbody>
             </table>
         </div>`;
