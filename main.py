@@ -8,6 +8,8 @@ import os
 app = FastAPI(title="MarketAnalyst KZ API", version="1.0.0")
 
 ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://kbdrjwvbkdbhjokyqlzy.supabase.co")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 app.add_middleware(
     CORSMiddleware,
