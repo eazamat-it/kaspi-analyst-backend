@@ -100,52 +100,42 @@ async function run(){
   if(!q) return;
   const btn = document.getElementById('btn');
   btn.disabled=true; btn.textContent='⏳ Загрузка...';
-  btn.style.background='#1e2a3a'; btn.style.color='#374151';
   show('loading');
 
   try {
-    document.getElementById('lstep').textContent='📦 Загружаем товары с Kaspi.kz...';
-    const r1 = await fetch(API+'/analyze',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({query:q})
+    document.getElementById('lstep').textContent='📦 Получаем анализ от сервера...';
+    
+    // Делаем ОДИН запрос к вашему бэкенду
+    const response = await fetch(API+'/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q })
     });
-    if(!r1.ok) throw new Error('Бэкенд вернул '+r1.status);
-    const kd = await r1.json();
-    const {competitors,stats,fromCache} = kd;
 
-    document.getElementById('lstep').textContent='🤖 AI анализирует реальные данные...';
-
-    const prompt = `Ты аналитик Kaspi.kz (Казахстан). РЕАЛЬНЫЕ ДАННЫЕ для ниши: "${q}"
-- Товаров: ${stats.totalFound}, средняя цена: ${stats.avgPrice} тг, диапазон: ${stats.minPrice}–${stats.maxPrice} тг
-- Рейтинг: ${stats.avgRating}/5, отзывов: ${stats.totalReviews}, среднее: ${stats.avgReviews}
-- Слабых (<10 отз.): ${stats.weakSellers}, сильных (≥100): ${stats.strongSellers}
-- Ниша: ${stats.nicheScore}/100, конкуренция: ${stats.competitionScore}/100
-Топ: ${competitors.slice(0,5).map((c,i)=>`${i+1}. ${c.name} | ${c.price}тг | ★${c.rating} | ${c.reviews}отз`).join('; ')}
-Ответь ТОЛЬКО JSON:
-{"nicheScore":${stats.nicheScore},"competitionScore":${stats.competitionScore},"demandScore":${stats.demandScore},"marginScore":0-100,"verdict":"ВОЙТИ"|"ОСТОРОЖНО"|"НЕ ВХОДИТЬ","verdictText":"одно предложение","optimalPrice":число,"marginPct":число,"monthlyProfit":число,"breakEvenUnits":число,"priceTrend":"РАСТЁТ"|"ПАДАЕТ"|"СТАБИЛЬНА","priceTrendText":"1 предложение","seasonality":"Высокий сезон"|"Низкий сезон"|"Без сезонности","freeSegments":["с1","с2","с3"],"topOpportunities":["о1","о2","о3"],"topRisks":["р1","р2","р3"],"keywords":["k1","k2","k3","k4","k5"],"entryStrategy":"3-4 предложения","reviewTip":"2 предложения","pricingTip":"2 предложения"}`;
-
-    const r2 = await fetch(ANTHROPIC_API,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
-    });
-    const cj = await r2.json();
-    const raw = (cj.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-    const ai = JSON.parse(raw);
-
-    D = {ai,competitors,stats,query:q,fromCache};
+    if(!response.ok) throw new Error('Сервер вернул ошибку ' + response.status);
+    
+    // Получаем сразу и статистику, и ответ от AI
+    const data = await response.json();
+    
+    // ВАЖНО: Убедитесь, что бэкенд возвращает объект 'ai' внутри ответа
+    D = {
+      ai: data.ai, 
+      competitors: data.competitors, 
+      stats: data.stats, 
+      query: q, 
+      fromCache: data.fromCache
+    };
+    
     renderResult('niche');
 
   } catch(e){
-    document.getElementById('errmsg').textContent = e.message||'Неизвестная ошибка';
+    document.getElementById('errmsg').textContent = e.message || 'Неизвестная ошибка';
     show('err');
   }
 
   btn.disabled=false; btn.textContent='Анализировать →';
   btn.style.background='linear-gradient(135deg,#f97316,#fb923c)'; btn.style.color='#fff';
 }
-
 function renderResult(tabId){
   const {ai,competitors,stats,fromCache} = D;
   const vc = ai.verdict==='ВОЙТИ'?'#10b981':ai.verdict==='ОСТОРОЖНО'?'#f59e0b':'#ef4444';
