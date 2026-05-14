@@ -11,6 +11,7 @@ body{background:#060b14;color:#e2e8f0;font-family:'Segoe UI',sans-serif;min-heig
 input{background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 16px;height:44px;outline:none;width:100%}
 input:focus{border-color:#f97316}
 input::placeholder{color:#4b5563}
+input[type=number]::-webkit-inner-spin-button{opacity:1}
 button{cursor:pointer;border:none;font-weight:700;font-size:13px;font-family:'Segoe UI',sans-serif}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .card{background:linear-gradient(145deg,#111827,#0f172a);border:1px solid #1e2a3a;border-radius:14px;padding:18px}
@@ -67,21 +68,32 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 .pass-rule.ok{color:#10b981}
 .pass-rule::before{content:'○';font-size:10px}
 .pass-rule.ok::before{content:'✓'}
-
-/* Cabinet */
-.cabinet-tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid #1e2a3a;padding-bottom:0}
+.cabinet-tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid #1e2a3a}
 .cab-tab{padding:8px 16px;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none}
 .cab-tab.active{color:#f97316;border-bottom-color:#f97316}
 .plan-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700}
 .plan-free{background:#1e2a3a;color:#9ca3af}
-.plan-basic{background:#f9731620;color:#f97316;border:1px solid #f9731640}
-.plan-pro{background:#10b98120;color:#10b981;border:1px solid #10b98140}
 .history-item{padding:12px;border:1px solid #1e2a3a;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
 .history-item:hover{border-color:#f97316}
 .history-verdict{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block}
 .v-enter{background:#10b98120;color:#10b981}
 .v-careful{background:#f59e0b20;color:#f59e0b}
 .v-no{background:#ef444420;color:#ef4444}
+
+/* Calculator */
+.calc-input-wrap{position:relative}
+.calc-input-wrap span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#6b7280;font-size:13px;pointer-events:none}
+.calc-input{background:#060b14;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 40px 0 14px;height:44px;outline:none;width:100%;font-family:'Segoe UI',sans-serif}
+.calc-input:focus{border-color:#f97316}
+.calc-input::placeholder{color:#4b5563}
+.calc-result-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1e2a3a;font-size:13px}
+.calc-result-row:last-child{border-bottom:none}
+.calc-verdict{text-align:center;padding:14px;border-radius:12px;font-weight:900;font-size:16px;margin-top:12px}
+.calc-good{background:#10b98120;border:2px solid #10b98140;color:#10b981}
+.calc-ok{background:#f59e0b20;border:2px solid #f59e0b40;color:#f59e0b}
+.calc-bad{background:#ef444420;border:2px solid #ef444440;color:#ef4444}
+.calc-label{color:#6b7280;font-size:12px}
+.calc-value{font-weight:700}
 </style>
 </head>
 <body>
@@ -92,41 +104,175 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
     <div id="userBar"></div>
   </div>
 
-  <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">Анализ ниш <span style="color:#f97316">казахстанского рынка</span></h1>
-  <p style="color:#4b5563;margin-bottom:4px;font-size:13px">Введите товар → AI анализирует нишу, цены, маржу и конкурентов</p>
-  <p style="color:#374151;margin-bottom:16px;font-size:11px">* Данные генерируются AI на основе анализа рынка Казахстана</p>
-
-  <div style="display:flex;gap:10px;margin-bottom:10px">
-    <input id="q" placeholder="Например: термос, bluetooth наушники, детские игрушки..." onkeydown="if(event.key==='Enter')run()"/>
-    <button onclick="run()" style="height:44px;padding:0 24px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;white-space:nowrap;box-shadow:0 4px 16px #f9731640">Анализировать →</button>
+  <!-- Main tabs -->
+  <div style="display:flex;gap:8px;margin-bottom:20px">
+    <button class="tab on" id="tabAnalyze" onclick="switchMainTab('analyze')">🔍 Анализ ниши</button>
+    <button class="tab" id="tabCalc" onclick="switchMainTab('calc')">🧮 Калькулятор</button>
   </div>
 
-  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px">
-    <span style="color:#374151;font-size:11px;padding-top:3px">Быстрый старт:</span>
-    <button class="qbtn" onclick="setQ('Термос')">Термос</button>
-    <button class="qbtn" onclick="setQ('Bluetooth наушники')">Bluetooth наушники</button>
-    <button class="qbtn" onclick="setQ('Чехол iPhone')">Чехол iPhone</button>
-    <button class="qbtn" onclick="setQ('Фитнес резинки')">Фитнес резинки</button>
-    <button class="qbtn" onclick="setQ('LED лампа')">LED лампа</button>
-    <button class="qbtn" onclick="setQ('Power bank')">Power bank</button>
-    <button class="qbtn" onclick="setQ('Маска для лица')">Маска для лица</button>
+  <!-- Analyze tab -->
+  <div id="analyzeSection">
+    <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">Анализ ниш <span style="color:#f97316">казахстанского рынка</span></h1>
+    <p style="color:#4b5563;margin-bottom:4px;font-size:13px">Введите товар → AI анализирует нишу, цены, маржу и конкурентов</p>
+    <p style="color:#374151;margin-bottom:16px;font-size:11px">* Данные генерируются AI на основе анализа рынка Казахстана</p>
+
+    <div style="display:flex;gap:10px;margin-bottom:10px">
+      <input id="q" placeholder="Например: термос, bluetooth наушники, детские игрушки..." onkeydown="if(event.key==='Enter')run()"/>
+      <button onclick="run()" style="height:44px;padding:0 24px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;white-space:nowrap;box-shadow:0 4px 16px #f9731640">Анализировать →</button>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px">
+      <span style="color:#374151;font-size:11px;padding-top:3px">Быстрый старт:</span>
+      <button class="qbtn" onclick="setQ('Термос')">Термос</button>
+      <button class="qbtn" onclick="setQ('Bluetooth наушники')">Bluetooth наушники</button>
+      <button class="qbtn" onclick="setQ('Чехол iPhone')">Чехол iPhone</button>
+      <button class="qbtn" onclick="setQ('Фитнес резинки')">Фитнес резинки</button>
+      <button class="qbtn" onclick="setQ('LED лампа')">LED лампа</button>
+      <button class="qbtn" onclick="setQ('Power bank')">Power bank</button>
+      <button class="qbtn" onclick="setQ('Маска для лица')">Маска для лица</button>
+    </div>
+
+    <div id="loading" style="display:none;text-align:center;padding:50px 20px" class="card">
+      <div style="font-size:36px;margin-bottom:12px;animation:pulse 1.4s ease infinite">🤖</div>
+      <div style="color:#f97316;font-weight:800;font-size:15px;margin-bottom:6px">Анализируем рынок...</div>
+      <div style="color:#374151;font-size:12px">AI изучает нишу и готовит рекомендации</div>
+    </div>
+    <div id="err" style="display:none" class="card">
+      <div style="color:#ef4444;font-weight:700;margin-bottom:6px">⚠️ Ошибка</div>
+      <div id="errmsg" style="color:#6b7280;font-size:13px;margin-bottom:10px"></div>
+      <button onclick="run()" style="padding:8px 16px;background:#f97316;color:#fff;border-radius:8px">🔄 Попробовать снова</button>
+    </div>
+    <div id="result" style="display:none"></div>
+    <div id="empty" style="text-align:center;padding:60px 20px">
+      <div style="font-size:52px;margin-bottom:12px;filter:grayscale(1) opacity(.3)">📊</div>
+      <div style="font-size:15px;font-weight:700;color:#374151">Введите товар для анализа</div>
+      <div style="font-size:12px;margin-top:6px;color:#1e2a3a">AI проанализирует нишу казахстанского рынка</div>
+    </div>
   </div>
 
-  <div id="loading" style="display:none;text-align:center;padding:50px 20px" class="card">
-    <div style="font-size:36px;margin-bottom:12px;animation:pulse 1.4s ease infinite">🤖</div>
-    <div style="color:#f97316;font-weight:800;font-size:15px;margin-bottom:6px">Анализируем рынок...</div>
-    <div style="color:#374151;font-size:12px">AI изучает нишу и готовит рекомендации</div>
-  </div>
-  <div id="err" style="display:none" class="card">
-    <div style="color:#ef4444;font-weight:700;margin-bottom:6px">⚠️ Ошибка</div>
-    <div id="errmsg" style="color:#6b7280;font-size:13px;margin-bottom:10px"></div>
-    <button onclick="run()" style="padding:8px 16px;background:#f97316;color:#fff;border-radius:8px">🔄 Попробовать снова</button>
-  </div>
-  <div id="result" style="display:none"></div>
-  <div id="empty" style="text-align:center;padding:60px 20px">
-    <div style="font-size:52px;margin-bottom:12px;filter:grayscale(1) opacity(.3)">📊</div>
-    <div style="font-size:15px;font-weight:700;color:#374151">Введите товар для анализа</div>
-    <div style="font-size:12px;margin-top:6px;color:#1e2a3a">AI проанализирует нишу казахстанского рынка</div>
+  <!-- Calculator tab -->
+  <div id="calcSection" style="display:none">
+    <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">🧮 Калькулятор <span style="color:#f97316">юнит-экономики</span></h1>
+    <p style="color:#4b5563;margin-bottom:20px;font-size:13px">Введите закупочную цену — узнайте за сколько продавать и сколько заработаете</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- Left: inputs -->
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:16px">📦 ДАННЫЕ О ТОВАРЕ</div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Название товара</label>
+          <input id="calcProduct" placeholder="Термос Stanley 1L" style="background:#060b14;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:13px;padding:0 14px;height:40px;outline:none;width:100%" oninput="calcUpdate()"/>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Закупочная цена (₸) *</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcBuy" type="number" placeholder="5000" oninput="calcUpdate()"/>
+            <span>₸</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Доставка до склада (₸)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcDelivery" type="number" placeholder="500" oninput="calcUpdate()"/>
+            <span>₸</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Упаковка (₸)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcPacking" type="number" placeholder="200" oninput="calcUpdate()"/>
+            <span>₸</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Количество в месяц (шт)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcQty" type="number" placeholder="30" oninput="calcUpdate()"/>
+            <span>шт</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Желаемая цена продажи (₸)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcSell" type="number" placeholder="15000" oninput="calcUpdate()"/>
+            <span>₸</span>
+          </div>
+          <div style="font-size:10px;color:#374151;margin-top:4px">Оставьте пустым — рассчитаем оптимальную</div>
+        </div>
+
+        <div style="margin-bottom:4px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Комиссия Kaspi (%)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcCommission" type="number" value="15" oninput="calcUpdate()"/>
+            <span>%</span>
+          </div>
+          <div style="font-size:10px;color:#374151;margin-top:4px">Стандартная комиссия Kaspi — 15%</div>
+        </div>
+
+        <div style="margin-top:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:8px">Режим налогообложения</label>
+          <div style="display:flex;flex-direction:column;gap:8px">
+
+            <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#060b14;border:1px solid #1e2a3a;border-radius:10px;cursor:pointer" id="taxLabel1">
+              <input type="radio" name="taxMode" value="3" onchange="setTax(3,'taxLabel1')" checked style="margin-top:2px;width:auto;height:auto;background:none;border:none;accent-color:#f97316"/>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#e2e8f0">ИП — Упрощённая декларация <span style="color:#10b981">3%</span></div>
+                <div style="font-size:10px;color:#6b7280;margin-top:2px">Оборот до 24 038 МРП (~88 млн ₸/год). Подходит большинству новичков на Kaspi</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#060b14;border:1px solid #1e2a3a;border-radius:10px;cursor:pointer" id="taxLabel2">
+              <input type="radio" name="taxMode" value="16" onchange="setTax(16,'taxLabel2')" style="margin-top:2px;width:auto;height:auto;background:none;border:none;accent-color:#f97316"/>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#e2e8f0">ИП — Общеустановленный режим <span style="color:#f59e0b">16%</span></div>
+                <div style="font-size:10px;color:#6b7280;margin-top:2px">Оборот выше 88 млн ₸/год или особые виды деятельности</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#060b14;border:1px solid #1e2a3a;border-radius:10px;cursor:pointer" id="taxLabel3">
+              <input type="radio" name="taxMode" value="20" onchange="setTax(20,'taxLabel3')" style="margin-top:2px;width:auto;height:auto;background:none;border:none;accent-color:#f97316"/>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#e2e8f0">ТОО — КПН <span style="color:#f59e0b">20%</span></div>
+                <div style="font-size:10px;color:#6b7280;margin-top:2px">Для юридических лиц. Обычно используется при работе с крупными поставщиками</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#060b14;border:1px solid #ef444430;border-radius:10px;cursor:pointer" id="taxLabel4">
+              <input type="radio" name="taxMode" value="0" onchange="setTax(0,'taxLabel4')" style="margin-top:2px;width:auto;height:auto;background:none;border:none;accent-color:#f97316"/>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#e2e8f0">Физлицо / без ИП <span style="color:#ef4444">0%</span></div>
+                <div style="font-size:10px;color:#ef4444;margin-top:2px">⚠️ Не рекомендуется — при обороте от 1 МРП (3 692 ₸) нужно платить налог. Риск штрафов</div>
+              </div>
+            </label>
+
+          </div>
+          <div style="font-size:10px;color:#374151;margin-top:8px">💡 Не знаете свой режим? Выберите "Упрощённая декларация 3%" — это стандарт для новичков на Kaspi</div>
+        </div>
+      </div>
+
+      <!-- Right: results -->
+      <div>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">📊 РЕЗУЛЬТАТ</div>
+          <div id="calcResults">
+            <div style="text-align:center;padding:20px;color:#374151;font-size:13px">
+              Введите закупочную цену чтобы увидеть расчёт
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="calcAdvice" style="display:none">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">💡 РЕКОМЕНДАЦИИ</div>
+          <div id="calcAdviceText"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -177,7 +323,7 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
     </div>
     <div id="newPassView" style="display:none">
       <h2>Новый пароль</h2>
-      <p>Придумайте надёжный пароль для вашего аккаунта</p>
+      <p>Придумайте надёжный пароль</p>
       <div id="newPassMsg"></div>
       <div class="pass-wrap">
         <input class="auth-input" id="newPass" type="password" placeholder="Новый пароль" oninput="onNewPassInput()"/>
@@ -215,8 +361,6 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
       <button class="cab-tab active" onclick="switchCabTab('profile')">Профиль</button>
       <button class="cab-tab" onclick="switchCabTab('history')">История</button>
     </div>
-
-    <!-- Profile tab -->
     <div id="cabProfile">
       <div class="card" style="margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:14px">
@@ -228,7 +372,6 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
           <div style="margin-left:auto" id="cabPlanBadge"></div>
         </div>
       </div>
-
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
         <div class="card" style="text-align:center">
           <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТАРИФ</div>
@@ -243,7 +386,6 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
           <div style="font-size:16px;font-weight:900;color:#10b981" id="cabTotal">0</div>
         </div>
       </div>
-
       <div class="card" style="margin-bottom:12px">
         <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🚀 ТАРИФЫ</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -264,17 +406,11 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
           </div>
         </div>
       </div>
-
       <button class="btn-secondary" onclick="logout()">Выйти из аккаунта</button>
     </div>
-
-    <!-- History tab -->
     <div id="cabHistory" style="display:none">
       <div id="historyList">
-        <div style="text-align:center;padding:30px;color:#4b5563">
-          <div style="font-size:32px;margin-bottom:8px">🔍</div>
-          <div>Загружаем историю...</div>
-        </div>
+        <div style="text-align:center;padding:30px;color:#4b5563">Загружаем историю...</div>
       </div>
     </div>
   </div>
@@ -304,6 +440,126 @@ async function init() {
         if (event === 'PASSWORD_RECOVERY') { currentUser = session?.user||null; openAuthModal(); showNewPass(); }
         else { currentUser = session?.user||null; renderUserBar(); }
     });
+}
+
+// Main tabs
+function switchMainTab(tab) {
+    document.getElementById('analyzeSection').style.display = tab==='analyze'?'block':'none';
+    document.getElementById('calcSection').style.display = tab==='calc'?'block':'none';
+    document.getElementById('tabAnalyze').className = 'tab'+(tab==='analyze'?' on':'');
+    document.getElementById('tabCalc').className = 'tab'+(tab==='calc'?' on':'');
+}
+
+function setTax(val, labelId) {
+    ["taxLabel1","taxLabel2","taxLabel3","taxLabel4"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.borderColor = id === labelId ? "#f97316" : (id === "taxLabel4" ? "#ef444430" : "#1e2a3a");
+    });
+    calcUpdate();
+}
+// Calculator
+function calcUpdate() {
+    const buy = parseFloat(document.getElementById('calcBuy').value)||0;
+    const delivery = parseFloat(document.getElementById('calcDelivery').value)||0;
+    const packing = parseFloat(document.getElementById('calcPacking').value)||0;
+    const qty = parseFloat(document.getElementById('calcQty').value)||30;
+    const sellInput = parseFloat(document.getElementById('calcSell').value)||0;
+    const commission = parseFloat(document.getElementById('calcCommission').value)||15;
+    const taxRadio = document.querySelector('input[name="taxMode"]:checked'); const tax = taxRadio ? parseFloat(taxRadio.value) : 3;
+
+    if (!buy) {
+        document.getElementById('calcResults').innerHTML = '<div style="text-align:center;padding:20px;color:#374151;font-size:13px">Введите закупочную цену чтобы увидеть расчёт</div>';
+        document.getElementById('calcAdvice').style.display='none';
+        return;
+    }
+
+    const costPerUnit = buy + delivery + packing;
+
+    // Если пользователь не ввёл цену продажи — рассчитываем оптимальную
+    // Оптимальная цена = себестоимость / (1 - комиссия% - налог% - желаемая маржа 30%)
+    const targetMargin = 0.30;
+    const optimalSell = sellInput || Math.ceil(costPerUnit / (1 - commission/100 - tax/100 - targetMargin));
+    const sell = sellInput || optimalSell;
+
+    const commissionAmt = sell * commission / 100;
+    const taxAmt = sell * tax / 100;
+    const netProfit = sell - costPerUnit - commissionAmt - taxAmt;
+    const marginPct = Math.round(netProfit / sell * 100);
+    const monthlyProfit = Math.round(netProfit * qty);
+    const breakEven = netProfit > 0 ? Math.ceil(costPerUnit / netProfit) : 999;
+    const roi = Math.round(netProfit / costPerUnit * 100);
+
+    const isGood = marginPct >= 25;
+    const isOk = marginPct >= 10 && marginPct < 25;
+    const isBad = marginPct < 10;
+
+    const verdictClass = isGood ? 'calc-good' : isOk ? 'calc-ok' : 'calc-bad';
+    const verdictText = isGood ? '✅ ВЫГОДНО — хорошая маржа' : isOk ? '⚠️ ОСТОРОЖНО — маржа низкая' : '❌ НЕ ВЫГОДНО — маржа слишком низкая';
+
+    document.getElementById('calcResults').innerHTML = `
+        <div class="calc-result-row">
+            <span class="calc-label">Себестоимость единицы</span>
+            <span class="calc-value">${fmt(costPerUnit)} ₸</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Оптимальная цена продажи</span>
+            <span class="calc-value" style="color:#f97316">${fmt(Math.round(optimalSell))} ₸</span>
+        </div>
+        ${sellInput ? `<div class="calc-result-row">
+            <span class="calc-label">Ваша цена продажи</span>
+            <span class="calc-value">${fmt(Math.round(sell))} ₸</span>
+        </div>` : ''}
+        <div class="calc-result-row">
+            <span class="calc-label">Комиссия Kaspi (${commission}%)</span>
+            <span class="calc-value" style="color:#ef4444">-${fmt(Math.round(commissionAmt))} ₸</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Налог ИП (${tax}%)</span>
+            <span class="calc-value" style="color:#ef4444">-${fmt(Math.round(taxAmt))} ₸</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Чистая прибыль с единицы</span>
+            <span class="calc-value" style="color:${netProfit>0?'#10b981':'#ef4444'}">${fmt(Math.round(netProfit))} ₸</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Маржа</span>
+            <span class="calc-value" style="color:${isGood?'#10b981':isOk?'#f59e0b':'#ef4444'}">${marginPct}%</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">ROI</span>
+            <span class="calc-value" style="color:${roi>30?'#10b981':'#f59e0b'}">${roi}%</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Прибыль в месяц (${qty} шт)</span>
+            <span class="calc-value" style="color:#10b981;font-size:15px">${fmt(monthlyProfit)} ₸</span>
+        </div>
+        <div class="calc-result-row" style="border-bottom:none">
+            <span class="calc-label">Окупаемость партии</span>
+            <span class="calc-value">${breakEven} шт</span>
+        </div>
+        <div class="calc-verdict ${verdictClass}">${verdictText}</div>
+    `;
+
+    // Advice
+    const adviceEl = document.getElementById('calcAdvice');
+    const adviceText = document.getElementById('calcAdviceText');
+    adviceEl.style.display='block';
+
+    let advice = [];
+    if (isBad) {
+        advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#ef4444">⚠️ Маржа ${marginPct}% — слишком низкая для стабильного бизнеса</div>`);
+        advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Попробуйте найти поставщика дешевле или поднять цену до ${fmt(Math.round(optimalSell))} ₸</div>`);
+    }
+    if (isOk) {
+        advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Маржа приемлемая, но рекомендуем поднять цену до ${fmt(Math.round(optimalSell))} ₸ для стабильности</div>`);
+    }
+    if (isGood) {
+        advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#10b981">✅ Отличная маржа! При ${qty} продажах в месяц заработаете ${fmt(monthlyProfit)} ₸</div>`);
+    }
+    advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">📦 Для окупаемости одной партии нужно продать ${breakEven} шт</div>`);
+    advice.push(`<div style="padding:6px 0;font-size:12px;color:#d1d5db">🔍 Сделайте анализ ниши чтобы узнать реальный спрос на этот товар</div>`);
+
+    adviceText.innerHTML = advice.join('');
 }
 
 function renderUserBar() {
@@ -343,16 +599,11 @@ async function saveHistory(query, ai, stats) {
     if (!currentUser) return;
     try {
         await sb.from('search_history').insert({
-            user_id: currentUser.id,
-            query,
-            verdict: ai.verdict||null,
-            niche_score: ai.nicheScore||null,
-            demand_score: ai.demandScore||null,
-            margin_score: ai.marginScore||null,
-            competition_score: ai.competitionScore||null,
-            optimal_price: ai.optimalPrice||null,
-            margin_pct: ai.marginPct||null,
-            monthly_profit: ai.monthlyProfit||null,
+            user_id: currentUser.id, query,
+            verdict: ai.verdict||null, niche_score: ai.nicheScore||null,
+            demand_score: ai.demandScore||null, margin_score: ai.marginScore||null,
+            competition_score: ai.competitionScore||null, optimal_price: ai.optimalPrice||null,
+            margin_pct: ai.marginPct||null, monthly_profit: ai.monthlyProfit||null,
             avg_price: stats.avgPrice||null,
         });
     } catch(e) { console.error('History save error:', e); }
@@ -385,8 +636,6 @@ async function run() {
 async function openCabinet() {
     document.getElementById('cabinetModal').style.display='flex';
     switchCabTab('profile');
-
-    // Fill profile data
     const email = currentUser.email;
     document.getElementById('cabEmail').textContent = email;
     document.getElementById('cabAvatar').textContent = email[0].toUpperCase();
@@ -395,41 +644,33 @@ async function openCabinet() {
     document.getElementById('cabUsedToday').textContent = `${getUsedToday()}/${FREE_LIMIT}`;
     document.getElementById('cabPlan').textContent = 'Бесплатный';
     document.getElementById('cabPlanBadge').innerHTML = '<span class="plan-badge plan-free">FREE</span>';
-
-    // Total count
-    const { count } = await sb.from('search_history').select('*', {count:'exact',head:true}).eq('user_id', currentUser.id);
+    const { count } = await sb.from('search_history').select('*',{count:'exact',head:true}).eq('user_id',currentUser.id);
     document.getElementById('cabTotal').textContent = count||0;
 }
-
 function closeCabinet() { document.getElementById('cabinetModal').style.display='none'; }
-
 function switchCabTab(tab) {
     document.querySelectorAll('.cab-tab').forEach((t,i) => {
-        t.classList.toggle('active', (i===0&&tab==='profile')||(i===1&&tab==='history'));
+        t.classList.toggle('active',(i===0&&tab==='profile')||(i===1&&tab==='history'));
     });
     document.getElementById('cabProfile').style.display = tab==='profile'?'block':'none';
     document.getElementById('cabHistory').style.display = tab==='history'?'block':'none';
-    if (tab==='history') loadHistory();
+    if(tab==='history') loadHistory();
 }
-
 async function loadHistory() {
     const list = document.getElementById('historyList');
     list.innerHTML = '<div style="text-align:center;padding:20px;color:#4b5563">Загружаем...</div>';
-    const { data, error } = await sb.from('search_history')
-        .select('*').eq('user_id', currentUser.id)
-        .order('created_at', {ascending:false}).limit(50);
-    if (error || !data || data.length===0) {
-        list.innerHTML = '<div style="text-align:center;padding:30px;color:#4b5563"><div style="font-size:32px;margin-bottom:8px">📭</div><div>История пуста — сделайте первый анализ!</div></div>';
+    const { data, error } = await sb.from('search_history').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(50);
+    if (error||!data||data.length===0) {
+        list.innerHTML='<div style="text-align:center;padding:30px;color:#4b5563"><div style="font-size:32px;margin-bottom:8px">📭</div><div>История пуста — сделайте первый анализ!</div></div>';
         return;
     }
-    list.innerHTML = data.map(item => {
-        const date = new Date(item.created_at).toLocaleDateString('ru-KZ',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-        const vClass = item.verdict==='ВОЙТИ'?'v-enter':item.verdict==='НЕ ВХОДИТЬ'?'v-no':'v-careful';
-        const verdict = item.verdict||'—';
+    list.innerHTML=data.map(item => {
+        const date=new Date(item.created_at).toLocaleDateString('ru-KZ',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+        const vClass=item.verdict==='ВОЙТИ'?'v-enter':item.verdict==='НЕ ВХОДИТЬ'?'v-no':'v-careful';
         return `<div class="history-item" onclick="repeatSearch('${item.query}')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
                 <span style="font-weight:700;font-size:14px;flex:1">${item.query}</span>
-                ${item.verdict?`<span class="history-verdict ${vClass}">${verdict}</span>`:''}
+                ${item.verdict?`<span class="history-verdict ${vClass}">${item.verdict}</span>`:''}
                 <span style="font-size:10px;color:#4b5563">${date}</span>
             </div>
             <div style="display:flex;gap:12px;flex-wrap:wrap">
@@ -441,146 +682,109 @@ async function loadHistory() {
         </div>`;
     }).join('');
 }
+function repeatSearch(query) { closeCabinet(); document.getElementById('q').value=query; switchMainTab('analyze'); run(); }
 
-function repeatSearch(query) {
-    closeCabinet();
-    document.getElementById('q').value = query;
-    run();
-}
-
-// Auth Modal
+// Auth
 function openAuthModal() { document.getElementById('authModal').style.display='flex'; showLogin(); }
 function closeAuthModal() { document.getElementById('authModal').style.display='none'; }
-
 function showLogin() {
     ['authView','forgotView','newPassView'].forEach(id => {
-        document.getElementById(id).style.display = id==='authView'?'block':'none';
+        document.getElementById(id).style.display=id==='authView'?'block':'none';
     });
     document.getElementById('authMsg').innerHTML='';
 }
 function showForgot() {
     ['authView','forgotView','newPassView'].forEach(id => {
-        document.getElementById(id).style.display = id==='forgotView'?'block':'none';
+        document.getElementById(id).style.display=id==='forgotView'?'block':'none';
     });
-    document.getElementById('forgotMsg').innerHTML='';
-    const email = document.getElementById('authEmail').value;
+    const email=document.getElementById('authEmail').value;
     if(email) document.getElementById('forgotEmail').value=email;
 }
 function showNewPass() {
     ['authView','forgotView','newPassView'].forEach(id => {
-        document.getElementById(id).style.display = id==='newPassView'?'block':'none';
+        document.getElementById(id).style.display=id==='newPassView'?'block':'none';
     });
-    document.getElementById('newPassMsg').innerHTML='';
 }
-
 function switchTab(mode) {
     authMode=mode;
     document.querySelectorAll('.auth-tab').forEach((t,i) => {
         t.classList.toggle('active',(i===0&&mode==='login')||(i===1&&mode==='register'));
     });
-    document.getElementById('authBtn').textContent = mode==='login'?'Войти':'Зарегистрироваться';
+    document.getElementById('authBtn').textContent=mode==='login'?'Войти':'Зарегистрироваться';
     document.getElementById('authBtn').disabled=false;
-    document.getElementById('authNameWrap').style.display = mode==='register'?'block':'none';
-    document.getElementById('forgotLink').style.display = mode==='login'?'block':'none';
-    document.getElementById('strengthWrap').style.display = mode==='register'?'block':'none';
+    document.getElementById('authNameWrap').style.display=mode==='register'?'block':'none';
+    document.getElementById('forgotLink').style.display=mode==='login'?'block':'none';
+    document.getElementById('strengthWrap').style.display=mode==='register'?'block':'none';
     document.getElementById('authMsg').innerHTML='';
     document.getElementById('authPass').value='';
 }
-function showMsg(text,type) {
-    document.getElementById('authMsg').innerHTML=`<div class="msg-${type}">${text}</div>`;
-}
+function showMsg(text,type) { document.getElementById('authMsg').innerHTML=`<div class="msg-${type}">${text}</div>`; }
 
-// Password
 function checkPass(p) {
-    return { len:p.length>=8, upper:/[A-Z]/.test(p), lower:/[a-z]/.test(p), num:/[0-9]/.test(p), spec:/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p) };
+    return{len:p.length>=8,upper:/[A-Z]/.test(p),lower:/[a-z]/.test(p),num:/[0-9]/.test(p),spec:/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p)};
 }
-function updateStrength(p, prefix) {
-    const c=checkPass(p), score=Object.values(c).filter(Boolean).length;
+function updateStrength(p,prefix) {
+    const c=checkPass(p),score=Object.values(c).filter(Boolean).length;
     const keys=['len','upper','lower','num','spec'];
     const ids=prefix==='n'?['nr-len','nr-upper','nr-lower','nr-num','nr-spec']:['r-len','r-upper','r-lower','r-num','r-spec'];
-    ids.forEach((id,i) => { document.getElementById(id).className='pass-rule'+(c[keys[i]]?' ok':''); });
+    ids.forEach((id,i)=>{document.getElementById(id).className='pass-rule'+(c[keys[i]]?' ok':'');});
     const colors=['','#ef4444','#f59e0b','#f97316','#10b981','#10b981'];
     const labels=['','Очень слабый','Слабый','Средний','Сильный','Очень сильный'];
     for(let i=1;i<=4;i++) document.getElementById(prefix+'sb'+i).style.background=i<=score?colors[score]:'#1e2a3a';
     const lbl=document.getElementById(prefix==='n'?'nStrengthLabel':'strengthLabel');
-    lbl.textContent=p?labels[score]:''; lbl.style.color=colors[score];
+    lbl.textContent=p?labels[score]:'';lbl.style.color=colors[score];
     return score;
 }
-function onPassInput() {
-    if(authMode!=='register') return;
-    const score=updateStrength(document.getElementById('authPass').value,'');
-    document.getElementById('authBtn').disabled=document.getElementById('authPass').value.length>0&&score<3;
-}
-function onNewPassInput() { updateStrength(document.getElementById('newPass').value,'n'); }
-function togglePass(id,btn) {
-    const inp=document.getElementById(id);
-    inp.type=inp.type==='password'?'text':'password';
-    btn.textContent=inp.type==='password'?'👁':'🙈';
-}
+function onPassInput(){if(authMode!=='register')return;const score=updateStrength(document.getElementById('authPass').value,'');document.getElementById('authBtn').disabled=document.getElementById('authPass').value.length>0&&score<3;}
+function onNewPassInput(){updateStrength(document.getElementById('newPass').value,'n');}
+function togglePass(id,btn){const inp=document.getElementById(id);inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'👁':'🙈';}
 
 async function doAuth() {
     const email=document.getElementById('authEmail').value.trim();
     const pass=document.getElementById('authPass').value;
     if(!email||!pass){showMsg('Заполните все поля','error');return;}
-    if(authMode==='register'){
-        const score=Object.values(checkPass(pass)).filter(Boolean).length;
-        if(score<3){showMsg('Пароль слишком слабый','error');return;}
-    }
+    if(authMode==='register'&&Object.values(checkPass(pass)).filter(Boolean).length<3){showMsg('Пароль слишком слабый','error');return;}
     document.getElementById('authBtn').textContent='...';
     if(authMode==='login'){
-        const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+        const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
         if(error){showMsg('Неверный email или пароль','error');document.getElementById('authBtn').textContent='Войти';return;}
-        currentUser=data.user; closeAuthModal(); renderUserBar();
+        currentUser=data.user;closeAuthModal();renderUserBar();
     } else {
-        const {error}=await sb.auth.signUp({email,password:pass});
+        const{error}=await sb.auth.signUp({email,password:pass});
         if(error){showMsg(error.message,'error');document.getElementById('authBtn').textContent='Зарегистрироваться';return;}
         showMsg('✅ Проверьте почту и подтвердите email!','success');
         document.getElementById('authBtn').textContent='Зарегистрироваться';
     }
 }
-
-async function doForgot() {
+async function doForgot(){
     const email=document.getElementById('forgotEmail').value.trim();
     if(!email){document.getElementById('forgotMsg').innerHTML='<div class="msg-error">Введите email</div>';return;}
-    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://marketanalyst.kz'});
-    document.getElementById('forgotMsg').innerHTML=error
-        ?`<div class="msg-error">${error.message}</div>`
-        :'<div class="msg-success">✅ Ссылка отправлена! Проверьте почту.</div>';
+    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://marketanalyst.kz'});
+    document.getElementById('forgotMsg').innerHTML=error?`<div class="msg-error">${error.message}</div>`:'<div class="msg-success">✅ Ссылка отправлена! Проверьте почту.</div>';
 }
-
-async function doNewPass() {
-    const pass=document.getElementById('newPass').value;
-    const confirm=document.getElementById('newPassConfirm').value;
+async function doNewPass(){
+    const pass=document.getElementById('newPass').value,confirm=document.getElementById('newPassConfirm').value;
     if(!pass||!confirm){document.getElementById('newPassMsg').innerHTML='<div class="msg-error">Заполните все поля</div>';return;}
     if(pass!==confirm){document.getElementById('newPassMsg').innerHTML='<div class="msg-error">Пароли не совпадают</div>';return;}
     if(Object.values(checkPass(pass)).filter(Boolean).length<3){document.getElementById('newPassMsg').innerHTML='<div class="msg-error">Пароль слишком слабый</div>';return;}
     document.getElementById('newPassBtn').textContent='...';
-    const {error}=await sb.auth.updateUser({password:pass});
+    const{error}=await sb.auth.updateUser({password:pass});
     if(error){document.getElementById('newPassMsg').innerHTML=`<div class="msg-error">${error.message}</div>`;document.getElementById('newPassBtn').textContent='Сохранить пароль';}
     else{document.getElementById('newPassMsg').innerHTML='<div class="msg-success">✅ Пароль успешно изменён!</div>';setTimeout(()=>{closeAuthModal();renderUserBar();},1500);}
 }
-
-async function logout() { await sb.auth.signOut(); currentUser=null; closeCabinet(); renderUserBar(); }
+async function logout(){await sb.auth.signOut();currentUser=null;closeCabinet();renderUserBar();}
 
 // Results
 function scoreColor(v,invert=false){const val=invert?(100-v):v;return val>=70?'#10b981':val>=40?'#f59e0b':'#ef4444';}
 function scoreBar(label,value,invert=false){
     const v=Number(value)||0;
-    return `<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-            <span style="color:#9ca3af">${label}</span>
-            <span style="font-weight:700;color:${scoreColor(v,invert)}">${v}/100</span>
-        </div>
-        <div class="score-bar"><div class="score-fill" style="width:${v}%;background:${scoreColor(v,invert)}"></div></div>
-    </div>`;
+    return`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#9ca3af">${label}</span><span style="font-weight:700;color:${scoreColor(v,invert)}">${v}/100</span></div><div class="score-bar"><div class="score-fill" style="width:${v}%;background:${scoreColor(v,invert)}"></div></div></div>`;
 }
-
 function renderResult(tabId){
     if(!D)return;
     const stats=D.stats||{},competitors=Array.isArray(D.competitors)?D.competitors:[],ai=D.ai||{};
     const hasAI=ai&&!ai.error&&typeof ai.verdict==='string'&&ai.verdict.length>0;
-    const verdict=hasAI?ai.verdict:'—';
-    const verdictText=hasAI?(ai.verdictText||''):'AI-анализ недоступен.';
+    const verdict=hasAI?ai.verdict:'—',verdictText=hasAI?(ai.verdictText||''):'AI-анализ недоступен.';
     const vc=verdict==='ВОЙТИ'?'#10b981':verdict==='НЕ ВХОДИТЬ'?'#ef4444':'#f59e0b';
     const nicheScore=Number(hasAI?(ai.nicheScore??stats.nicheScore??0):(stats.nicheScore??0));
     const demandScore=Number(hasAI?(ai.demandScore??stats.demandScore??0):(stats.demandScore??0));
@@ -593,8 +797,9 @@ function renderResult(tabId){
 
     let content=`
     <div class="card" style="border-left:4px solid ${vc};margin-bottom:15px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <span style="font-size:22px;font-weight:900;color:${vc}">${verdict}</span>
+            <button onclick="switchMainTab('calc')" style="padding:6px 14px;background:#f9731620;color:#f97316;border:1px solid #f9731640;border-radius:8px;font-size:11px">🧮 Рассчитать экономику →</button>
         </div>
         <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
     </div>
@@ -615,21 +820,12 @@ function renderResult(tabId){
         const keywords=hasAI&&Array.isArray(ai.keywords)?ai.keywords:[];
         content+=`
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
-            <div class="card">
-                <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">📊 СКОРЫ НИШИ</div>
-                ${scoreBar('Привлекательность ниши',nicheScore)}
-                ${scoreBar('Спрос',demandScore)}
-                ${scoreBar('Маржинальность',marginScore)}
-                ${scoreBar('Конкуренция (выше = хуже)',compScore,true)}
+            <div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">📊 СКОРЫ НИШИ</div>
+                ${scoreBar('Привлекательность ниши',nicheScore)}${scoreBar('Спрос',demandScore)}${scoreBar('Маржинальность',marginScore)}${scoreBar('Конкуренция (выше = хуже)',compScore,true)}
             </div>
-            <div class="card">
-                <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">💰 ФИНАНСЫ</div>
+            <div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">💰 ФИНАНСЫ</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                    ${[['Оптим. цена',optimalPrice],['Маржа',marginPct],['Прибыль/мес.',monthlyProfit],['Окупаемость',breakEvenUnits],['Мин. цена',fmt(stats.minPrice)+' ₸'],['Макс. цена',fmt(stats.maxPrice)+' ₸']].map(([l,v])=>`
-                    <div style="background:#060b14;border-radius:8px;padding:8px">
-                        <div style="font-size:9px;color:#4b5563">${l}</div>
-                        <div style="font-weight:700;font-size:13px;margin-top:2px">${v}</div>
-                    </div>`).join('')}
+                    ${[['Оптим. цена',optimalPrice],['Маржа',marginPct],['Прибыль/мес.',monthlyProfit],['Окупаемость',breakEvenUnits],['Мин. цена',fmt(stats.minPrice)+' ₸'],['Макс. цена',fmt(stats.maxPrice)+' ₸']].map(([l,v])=>`<div style="background:#060b14;border-radius:8px;padding:8px"><div style="font-size:9px;color:#4b5563">${l}</div><div style="font-weight:700;font-size:13px;margin-top:2px">${v}</div></div>`).join('')}
                 </div>
             </div>
         </div>
@@ -637,18 +833,9 @@ function renderResult(tabId){
         ${risks.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:10px">⚠️ РИСКИ</div>${risks.map(r=>`<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${r}</div>`).join('')}</div>`:''}
         ${keywords.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:10px">🔑 КЛЮЧЕВЫЕ СЛОВА</div><div style="display:flex;flex-wrap:wrap;gap:6px">${keywords.map(k=>`<span class="pill" style="background:#1e2a3a;color:#9ca3af">${k}</span>`).join('')}</div></div>`:''}`;
     } else {
-        content+=`<div class="card">
-            <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🏆 КОНКУРЕНТЫ В НИШЕ (${competitors.length})</div>
+        content+=`<div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🏆 КОНКУРЕНТЫ В НИШЕ (${competitors.length})</div>
             <table><thead><tr><th>ТОВАР</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ПРОДАВЕЦ</th></tr></thead>
-            <tbody>${competitors.length?competitors.map((c,i)=>`<tr>
-                <td><a href="${c.url||'#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name||'—'}</a></td>
-                <td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td>
-                <td><span style="color:#f59e0b">★</span> ${c.rating??'—'}</td>
-                <td>${fmt(c.reviews)}</td>
-                <td style="color:#6b7280;font-size:11px">${c.seller||'—'}</td>
-            </tr>`).join(''):`<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Нет данных</td></tr>`}
-            </tbody></table>
-        </div>`;
+            <tbody>${competitors.length?competitors.map((c,i)=>`<tr><td><a href="${c.url||'#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name||'—'}</a></td><td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td><td><span style="color:#f59e0b">★</span> ${c.rating??'—'}</td><td>${fmt(c.reviews)}</td><td style="color:#6b7280;font-size:11px">${c.seller||'—'}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Нет данных</td></tr>`}</tbody></table></div>`;
     }
     document.getElementById('result').innerHTML=content;
 }
