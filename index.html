@@ -23,6 +23,8 @@ a:hover{color:#f97316}
 table{width:100%;border-collapse:collapse}
 th{padding:10px 12px;text-align:left;color:#4b5563;font-size:10px;font-weight:700;background:#0f172a}
 td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
+.score-bar{height:6px;border-radius:3px;background:#1e2a3a;margin-top:4px}
+.score-fill{height:100%;border-radius:3px;transition:width .6s ease}
 </style>
 </head>
 <body>
@@ -94,42 +96,177 @@ async function run() {
     const q = document.getElementById('q').value.trim();
     if (!q) return;
     show('loading');
+    document.getElementById('lstep').textContent = 'Получаем данные с Kaspi.kz...';
     try {
         const r = await fetch(`${API}/analyze`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ query: q })
         });
+        if (!r.ok) throw new Error(`Сервер вернул ошибку ${r.status}`);
         D = await r.json();
         renderResult('niche');
         show('result');
     } catch (e) {
-        document.getElementById('errmsg').textContent = e.message;
+        document.getElementById('errmsg').textContent = e.message || 'Неизвестная ошибка. Проверьте подключение.';
         show('err');
     }
 }
 
+function scoreColor(v) {
+    if (v >= 70) return '#10b981';
+    if (v >= 40) return '#f59e0b';
+    return '#ef4444';
+}
+
+function scoreBar(label, value) {
+    const v = Number(value) || 0;
+    return `
+        <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                <span style="color:#9ca3af">${label}</span>
+                <span style="font-weight:700;color:${scoreColor(v)}">${v}/100</span>
+            </div>
+            <div class="score-bar">
+                <div class="score-fill" style="width:${v}%;background:${scoreColor(v)}"></div>
+            </div>
+        </div>`;
+}
+
 function renderResult(tabId) {
-    if (!D || !D.ai) return;
-    const { ai, stats, competitors } = D;
-    const vc = ai.verdict === 'ВОЙТИ' ? '#10b981' : '#f59e0b';
-    
-    // Отрисовка вкладок и основного контента
+    if (!D) return;
+
+    // Безопасное извлечение данных с fallback на пустые значения
+    const stats = D.stats || {};
+    const competitors = Array.isArray(D.competitors) ? D.competitors : [];
+    const ai = D.ai || {};
+
+    // Проверяем, есть ли реальный AI-ответ (не пустой объект и не ошибка)
+    const hasAI = ai && !ai.error && typeof ai.verdict === 'string' && ai.verdict.length > 0;
+
+    const verdict = hasAI ? ai.verdict : '—';
+    const verdictText = hasAI
+        ? (ai.verdictText || '')
+        : (ai.error ? 'Ошибка AI-анализа: ' + ai.error : 'AI-анализ недоступен. Ключ Anthropic API не настроен на сервере.');
+    const vc = verdict === 'ВОЙТИ' ? '#10b981' : verdict === 'НЕ ВХОДИТЬ' ? '#ef4444' : '#f59e0b';
+
+    const nicheScore  = Number(hasAI ? (ai.nicheScore        ?? stats.nicheScore        ?? 0) : (stats.nicheScore        ?? 0));
+    const demandScore = Number(hasAI ? (ai.demandScore        ?? stats.demandScore        ?? 0) : (stats.demandScore        ?? 0));
+    const marginScore = Number(hasAI ? (ai.marginScore        ?? 0) : 0);
+    const compScore   = Number(hasAI ? (ai.competitionScore   ?? stats.competitionScore   ?? 0) : (stats.competitionScore   ?? 0));
+
+    const optimalPrice   = hasAI && ai.optimalPrice   ? fmt(ai.optimalPrice) + ' ₸'  : '—';
+    const marginPct      = hasAI && ai.marginPct      ? ai.marginPct + '%'            : '—';
+    const monthlyProfit  = hasAI && ai.monthlyProfit  ? fmt(ai.monthlyProfit) + ' ₸' : '—';
+    const breakEvenUnits = hasAI && ai.breakEvenUnits ? ai.breakEvenUnits + ' шт.'   : '—';
+
     let content = `
-        <div class="card" style="border-left:4px solid ${vc}; margin-bottom:15px">
-            <h2 style="color:${vc}">${ai.verdict}</h2>
-            <p>${ai.verdictText}</p>
+        <div class="card" style="border-left:4px solid ${vc};margin-bottom:15px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <span style="font-size:22px;font-weight:900;color:${vc}">${verdict}</span>
+                ${!hasAI ? '<span class="pill" style="background:#ef444420;color:#ef4444;border:1px solid #ef444440;font-size:9px">AI НЕДОСТУПЕН</span>' : ''}
+            </div>
+            <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
         </div>
-        <div style="display:flex; gap:10px; margin-bottom:15px">
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px">
+            <div class="card" style="text-align:center">
+                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">НАЙДЕНО ТОВАРОВ</div>
+                <div style="font-size:22px;font-weight:900;color:#f97316">${stats.totalFound ?? 0}</div>
+            </div>
+            <div class="card" style="text-align:center">
+                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">СРЕДНЯЯ ЦЕНА</div>
+                <div style="font-size:18px;font-weight:900">${fmt(stats.avgPrice)} ₸</div>
+            </div>
+            <div class="card" style="text-align:center">
+                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ВСЕГО ОТЗЫВОВ</div>
+                <div style="font-size:18px;font-weight:900">${fmt(stats.totalReviews)}</div>
+            </div>
+            <div class="card" style="text-align:center">
+                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ОПТИМ. ЦЕНА</div>
+                <div style="font-size:18px;font-weight:900;color:#10b981">${optimalPrice}</div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-bottom:15px">
             <button class="tab ${tabId==='niche'?'on':''}" onclick="renderResult('niche')">Ниша</button>
             <button class="tab ${tabId==='rivals'?'on':''}" onclick="renderResult('rivals')">Конкуренты</button>
         </div>
     `;
-    
-    if(tabId === 'niche') {
-        content += `<div class="card">Анализ ниши: ${ai.nicheScore}/100</div>`;
+
+    if (tabId === 'niche') {
+        const opportunities = hasAI
+            ? (Array.isArray(ai.freeSegments) && ai.freeSegments.length ? ai.freeSegments : (Array.isArray(ai.topOpportunities) ? ai.topOpportunities : []))
+            : [];
+        const risks    = hasAI && Array.isArray(ai.topRisks)  ? ai.topRisks  : [];
+        const keywords = hasAI && Array.isArray(ai.keywords)   ? ai.keywords   : [];
+
+        content += `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+            <div class="card">
+                <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">📊 СКОРЫ НИШИ</div>
+                ${scoreBar('Привлекательность ниши', nicheScore)}
+                ${scoreBar('Спрос', demandScore)}
+                ${scoreBar('Маржинальность', marginScore)}
+                ${scoreBar('Конкуренция (выше = хуже)', compScore)}
+            </div>
+            <div class="card">
+                <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">💰 ФИНАНСЫ</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    ${[
+                        ['Оптим. цена', optimalPrice],
+                        ['Маржа', marginPct],
+                        ['Прибыль/мес.', monthlyProfit],
+                        ['Окупаемость', breakEvenUnits],
+                        ['Мин. цена', fmt(stats.minPrice) + ' ₸'],
+                        ['Макс. цена', fmt(stats.maxPrice) + ' ₸'],
+                    ].map(([l,v]) => `
+                        <div style="background:#060b14;border-radius:8px;padding:8px">
+                            <div style="font-size:9px;color:#4b5563">${l}</div>
+                            <div style="font-weight:700;font-size:13px;margin-top:2px">${v}</div>
+                        </div>`).join('')}
+                </div>
+            </div>
+        </div>
+        ${opportunities.length ? `
+        <div class="card" style="margin-top:15px">
+            <div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:10px">✅ ВОЗМОЖНОСТИ</div>
+            ${opportunities.map(o => `<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${o}</div>`).join('')}
+        </div>` : ''}
+        ${risks.length ? `
+        <div class="card" style="margin-top:15px">
+            <div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:10px">⚠️ РИСКИ</div>
+            ${risks.map(r => `<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${r}</div>`).join('')}
+        </div>` : ''}
+        ${keywords.length ? `
+        <div class="card" style="margin-top:15px">
+            <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:10px">🔑 КЛЮЧЕВЫЕ СЛОВА</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+                ${keywords.map(k => `<span class="pill" style="background:#1e2a3a;color:#9ca3af">${k}</span>`).join('')}
+            </div>
+        </div>` : ''}
+        `;
     } else {
-        content += `<div class="card">Найдено конкурентов: ${competitors.length}</div>`;
+        content += `
+        <div class="card">
+            <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🏆 ТОП КОНКУРЕНТЫ (${competitors.length})</div>
+            <table>
+                <thead><tr>
+                    <th>ТОВАР</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ПРОДАВЕЦ</th>
+                </tr></thead>
+                <tbody>
+                ${competitors.length ? competitors.map((c, i) => `
+                    <tr>
+                        <td><a href="${c.url || '#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name || '—'}</a></td>
+                        <td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td>
+                        <td><span style="color:#f59e0b">★</span> ${c.rating ?? '—'}</td>
+                        <td>${fmt(c.reviews)}</td>
+                        <td style="color:#6b7280;font-size:11px">${c.seller || '—'}</td>
+                    </tr>`).join('')
+                : `<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Конкуренты не найдены</td></tr>`}
+                </tbody>
+            </table>
+        </div>`;
     }
 
     document.getElementById('result').innerHTML = content;
