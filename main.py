@@ -1,119 +1,892 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import httpx
-import json
-import os
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarketAnalyst KZ — Анализ ниш казахстанского рынка</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060b14;color:#e2e8f0;font-family:'Segoe UI',sans-serif;min-height:100vh}
+input{background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 16px;height:44px;outline:none;width:100%}
+input:focus{border-color:#f97316}
+input::placeholder{color:#4b5563}
+input[type=number]::-webkit-inner-spin-button{opacity:1}
+button{cursor:pointer;border:none;font-weight:700;font-size:13px;font-family:'Segoe UI',sans-serif}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.card{background:linear-gradient(145deg,#111827,#0f172a);border:1px solid #1e2a3a;border-radius:14px;padding:18px}
+.pill{border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;display:inline-block}
+.tab{border-radius:9px;padding:7px 16px;font-weight:700;font-size:12px;transition:all .15s;border:1px solid #1e2a3a;background:#0f172a;color:#6b7280;margin-right:5px}
+.tab.on{background:#f97316;border-color:#f97316;color:#fff}
+.qbtn{background:#0f172a;border:1px solid #1e2a3a;border-radius:20px;padding:4px 12px;color:#6b7280;font-size:11px;transition:all .15s;margin-bottom:5px}
+.qbtn:hover{border-color:#f97316;color:#f97316}
+a{color:#d1d5db;text-decoration:none}
+a:hover{color:#f97316}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 12px;text-align:left;color:#4b5563;font-size:10px;font-weight:700;background:#0f172a}
+td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
+.score-bar{height:6px;border-radius:3px;background:#1e2a3a;margin-top:4px}
+.score-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.modal-overlay{position:fixed;inset:0;background:#000000aa;display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:#111827;border:1px solid #1e2a3a;border-radius:16px;padding:32px;width:100%;max-width:400px;margin:16px;max-height:90vh;overflow-y:auto}
+.modal-wide{background:#111827;border:1px solid #1e2a3a;border-radius:16px;padding:32px;width:100%;max-width:680px;margin:16px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:20px;font-weight:900;margin-bottom:6px}
+.modal-wide h2{font-size:20px;font-weight:900;margin-bottom:20px}
+.modal p{color:#6b7280;font-size:13px;margin-bottom:24px}
+.auth-input{background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 16px;height:44px;outline:none;width:100%;margin-bottom:12px;font-family:'Segoe UI',sans-serif}
+.auth-input:focus{border-color:#f97316}
+.auth-input::placeholder{color:#4b5563}
+.btn-primary{width:100%;height:44px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;margin-bottom:12px}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{width:100%;height:44px;background:transparent;color:#9ca3af;border-radius:10px;font-size:13px;font-weight:600;border:1px solid #1e2a3a;cursor:pointer}
+.btn-secondary:hover{border-color:#f97316;color:#f97316}
+.auth-tabs{display:flex;margin-bottom:24px;border-bottom:1px solid #1e2a3a}
+.auth-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent}
+.auth-tab.active{color:#f97316;border-bottom-color:#f97316}
+.msg-success{background:#10b98120;border:1px solid #10b98140;color:#10b981;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
+.msg-error{background:#ef444420;border:1px solid #ef444440;color:#ef4444;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
+.user-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;font-size:12px}
+.user-bar .email{color:#9ca3af;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+.user-bar .limit{color:#f97316;font-weight:700;white-space:nowrap}
+.btn-logout{background:transparent;border:1px solid #1e2a3a;color:#6b7280;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer}
+.btn-logout:hover{border-color:#ef4444;color:#ef4444}
+.btn-login{background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:8px;padding:6px 16px;font-size:12px;cursor:pointer;border:none}
+.btn-cabinet{background:transparent;border:1px solid #1e2a3a;color:#9ca3af;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer}
+.btn-cabinet:hover{border-color:#f97316;color:#f97316}
+.forgot-link{text-align:right;margin-bottom:12px;margin-top:-4px}
+.forgot-link span{color:#6b7280;font-size:11px;cursor:pointer}
+.forgot-link span:hover{color:#f97316}
+.pass-wrap{position:relative;margin-bottom:4px}
+.pass-wrap .auth-input{margin-bottom:0}
+.pass-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#6b7280;font-size:16px;user-select:none}
+.pass-toggle:hover{color:#f97316}
+.strength-bars{display:flex;gap:4px;margin:8px 0 4px}
+.strength-bar{height:4px;border-radius:2px;flex:1;background:#1e2a3a;transition:background .3s}
+.strength-label{font-size:11px;margin-bottom:8px}
+.pass-rules{margin-bottom:12px}
+.pass-rule{font-size:11px;padding:2px 0;display:flex;align-items:center;gap:6px;color:#4b5563;transition:color .2s}
+.pass-rule.ok{color:#10b981}
+.pass-rule::before{content:'○';font-size:10px}
+.pass-rule.ok::before{content:'✓'}
+.cabinet-tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid #1e2a3a}
+.cab-tab{padding:8px 16px;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none}
+.cab-tab.active{color:#f97316;border-bottom-color:#f97316}
+.plan-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700}
+.plan-free{background:#1e2a3a;color:#9ca3af}
+.history-item{padding:12px;border:1px solid #1e2a3a;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.history-item:hover{border-color:#f97316}
+.history-verdict{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block}
+.v-enter{background:#10b98120;color:#10b981}
+.v-careful{background:#f59e0b20;color:#f59e0b}
+.v-no{background:#ef444420;color:#ef4444}
 
-app = FastAPI(title="MarketAnalyst KZ API", version="1.0.0")
+/* Calculator */
+.calc-input-wrap{position:relative}
+.calc-input-wrap span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#6b7280;font-size:13px;pointer-events:none}
+.calc-input{background:#060b14;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 40px 0 14px;height:44px;outline:none;width:100%;font-family:'Segoe UI',sans-serif}
+.calc-input:focus{border-color:#f97316}
+.calc-input::placeholder{color:#4b5563}
+.calc-result-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1e2a3a;font-size:13px}
+.calc-result-row:last-child{border-bottom:none}
+.calc-verdict{text-align:center;padding:14px;border-radius:12px;font-weight:900;font-size:16px;margin-top:12px}
+.calc-good{background:#10b98120;border:2px solid #10b98140;color:#10b981}
+.calc-ok{background:#f59e0b20;border:2px solid #f59e0b40;color:#f59e0b}
+.calc-bad{background:#ef444420;border:2px solid #ef444440;color:#ef4444}
+.calc-label{color:#6b7280;font-size:12px}
+.calc-value{font-weight:700}
 
-ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY")
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://kbdrjwvbkdbhjokyqlzy.supabase.co")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@media (min-width: 641px) {
+    #searchRow{flex-direction:row !important}
+    #searchRow input{flex:1}
+    #searchRow button{width:auto !important;padding:0 24px}
+    .stats-grid{grid-template-columns:repeat(4,1fr) !important}
+    .score-grid{grid-template-columns:1fr 1fr !important}
+    .calc-grid{grid-template-columns:1fr 1fr !important}
+    .cab-grid{grid-template-columns:1fr 1fr 1fr !important}
+}
 
-@app.get("/")
-async def root():
-    return {"status": "ok", "key_set": bool(ANTHROPIC_KEY)}
+/* ===== MOBILE ===== */
+@media (max-width: 640px) {
+    .user-bar .email{max-width:100px}
+    .user-bar{gap:6px;padding:6px 10px}
+    .btn-cabinet{padding:4px 8px;font-size:10px}
+    .btn-logout{padding:4px 8px;font-size:10px}
+    .btn-login{padding:8px 14px;font-size:13px}
+    .modal{padding:20px;margin:10px}
+    .modal-wide{padding:20px;margin:10px;max-height:95vh}
+    .card{padding:14px}
+    .tab{padding:6px 12px;font-size:11px}
+    .qbtn{font-size:10px;padding:4px 10px}
+}
+</style>
+</head>
+<body>
+<div style="max-width:1080px;margin:0 auto;padding:16px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px 0;border-bottom:1px solid #1e2a3a;flex-wrap:wrap">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff">M</div>
+    <span style="font-weight:900;font-size:20px;flex:1">Market<span style="color:#f97316">Analyst</span> <span style="color:#6b7280;font-size:14px;font-weight:400">KZ</span></span>
+    <div id="userBar"></div>
+  </div>
 
-@app.post("/analyze")
-async def analyze(body: dict):
-    query = body.get("query", "").strip()
-    if not query:
-        raise HTTPException(status_code=400, detail="Query is required")
+  <!-- Main tabs -->
+  <div style="display:flex;gap:8px;margin-bottom:20px">
+    <button class="tab on" id="tabAnalyze" onclick="switchMainTab('analyze')">🔍 Анализ ниши</button>
+    <button class="tab" id="tabCalc" onclick="switchMainTab('calc')">🧮 Калькулятор</button>
+  </div>
 
-    if not ANTHROPIC_KEY:
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+  <!-- Analyze tab -->
+  <div id="analyzeSection">
+    <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">Анализ ниш <span style="color:#f97316">казахстанского рынка</span></h1>
+    <p style="color:#4b5563;margin-bottom:4px;font-size:13px">Введите товар → AI анализирует нишу, цены, маржу и конкурентов</p>
+    <p style="color:#374151;margin-bottom:16px;font-size:11px">* Данные генерируются AI на основе анализа рынка Казахстана</p>
 
-    prompt = f"""Ты эксперт по маркетплейсу Kaspi.kz (Казахстан). Проанализируй нишу "{query}".
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px" id="searchRow">
+      <input id="q" placeholder="Термос, наушники, чехол..." onkeydown="if(event.key==='Enter')run()" style="font-size:16px"/>
+      <button onclick="run()" style="height:48px;width:100%;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;font-size:15px;box-shadow:0 4px 16px #f9731640">🔍 Анализировать</button>
+    </div>
 
-Верни ТОЛЬКО валидный JSON, без пояснений, без markdown:
-{{
-  "verdict": "ВОЙТИ или ОСТОРОЖНО или НЕ ВХОДИТЬ — выбери исходя из реального анализа ниши {query}",
-  "verdictText": "2-3 предложения с обоснованием специфичным для товара {query}",
-  "nicheScore": 0,
-  "demandScore": 0,
-  "marginScore": 0,
-  "competitionScore": 0,
-  "optimalPrice": 0,
-  "marginPct": 0,
-  "monthlyProfit": 0,
-  "breakEvenUnits": 0,
-  "freeSegments": ["свободный сегмент для {query}"],
-  "topOpportunities": ["возможность 1 для {query}", "возможность 2", "возможность 3"],
-  "topRisks": ["риск 1 для {query}", "риск 2"],
-  "keywords": ["ключевое слово 1", "ключевое слово 2", "ключевое слово 3"],
-  "stats": {{
-    "totalFound": 0,
-    "avgPrice": 0,
-    "minPrice": 0,
-    "maxPrice": 0,
-    "totalReviews": 0,
-    "avgReviews": 0,
-    "nicheScore": 0,
-    "competitionScore": 0,
-    "demandScore": 0
-  }},
-  "competitors": [
-    {{"name": "название товара", "price": 0, "rating": 4.5, "reviews": 0, "seller": "магазин", "url": "https://kaspi.kz/shop/p/example", "inStock": true}}
-  ]
-}}
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px">
+      <span style="color:#374151;font-size:11px;padding-top:3px">Быстрый старт:</span>
+      <button class="qbtn" onclick="setQ('Термос')">Термос</button>
+      <button class="qbtn" onclick="setQ('Bluetooth наушники')">Bluetooth наушники</button>
+      <button class="qbtn" onclick="setQ('Чехол iPhone')">Чехол iPhone</button>
+      <button class="qbtn" onclick="setQ('Фитнес резинки')">Фитнес резинки</button>
+      <button class="qbtn" onclick="setQ('LED лампа')">LED лампа</button>
+      <button class="qbtn" onclick="setQ('Power bank')">Power bank</button>
+      <button class="qbtn" onclick="setQ('Маска для лица')">Маска для лица</button>
+    </div>
 
-Замени все нули на РЕАЛЬНЫЕ и УНИКАЛЬНЫЕ значения для товара "{query}" на казахстанском рынке.
-Цены в тенге. nicheScore, demandScore, marginScore, competitionScore — числа от 0 до 100.
-Для разных товаров цифры должны отличаться."""
+    <div id="loading" style="display:none;text-align:center;padding:50px 20px" class="card">
+      <div style="font-size:36px;margin-bottom:12px;animation:pulse 1.4s ease infinite">🤖</div>
+      <div style="color:#f97316;font-weight:800;font-size:15px;margin-bottom:6px">Анализируем рынок...</div>
+      <div style="color:#374151;font-size:12px">AI изучает нишу и готовит рекомендации</div>
+    </div>
+    <div id="err" style="display:none" class="card">
+      <div style="color:#ef4444;font-weight:700;margin-bottom:6px">⚠️ Ошибка</div>
+      <div id="errmsg" style="color:#6b7280;font-size:13px;margin-bottom:10px"></div>
+      <button onclick="run()" style="padding:8px 16px;background:#f97316;color:#fff;border-radius:8px">🔄 Попробовать снова</button>
+    </div>
+    <div id="result" style="display:none"></div>
+    <div id="empty" style="text-align:center;padding:60px 20px">
+      <div style="font-size:52px;margin-bottom:12px;filter:grayscale(1) opacity(.3)">📊</div>
+      <div style="font-size:15px;font-weight:700;color:#374151">Введите товар для анализа</div>
+      <div style="font-size:12px;margin-top:6px;color:#1e2a3a">AI проанализирует нишу казахстанского рынка</div>
+    </div>
+  </div>
 
-    try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            r_ai = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": ANTHROPIC_KEY,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json"
-                },
-                json={
-                    "model": "claude-haiku-4-5-20251001",
-                    "max_tokens": 2000,
-                    "messages": [{"role": "user", "content": prompt}]
-                }
-            )
+  <!-- Calculator tab -->
+  <div id="calcSection" style="display:none">
+    <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">🧮 Калькулятор <span style="color:#f97316">юнит-экономики</span></h1>
+    <p style="color:#4b5563;margin-bottom:20px;font-size:13px">Введите закупочную цену — узнайте за сколько продавать и сколько заработаете</p>
 
-            if r_ai.status_code != 200:
-                raise Exception(f"Anthropic error: {r_ai.status_code} {r_ai.text}")
+    <div style="display:grid;grid-template-columns:1fr;gap:16px">
+      <!-- Left: inputs -->
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:16px">📦 ДАННЫЕ О ТОВАРЕ</div>
 
-            raw_text = r_ai.json()["content"][0]["text"]
-            start = raw_text.find("{")
-            end = raw_text.rfind("}") + 1
-            data = json.loads(raw_text[start:end])
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Название товара</label>
+          <input id="calcProduct" placeholder="Термос Stanley 1L" style="background:#060b14;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:13px;padding:0 14px;height:40px;outline:none;width:100%" oninput="calcUpdate()"/>
+        </div>
 
-            stats = data.pop("stats", {})
-            competitors = data.pop("competitors", [])
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Закупочная цена (₸) *</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcBuy" type="number" placeholder="5000" oninput="calcUpdate()"/>
+            <span>₸</span>
+          </div>
+        </div>
 
-            return JSONResponse({
-                "stats": stats,
-                "competitors": competitors,
-                "ai": data,
-                "fromCache": False
-            })
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Доставка до склада (₸)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcDelivery" type="number" placeholder="500" oninput="calcUpdate()"/>
+            <span>₸</span>
+          </div>
+        </div>
 
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"JSON parse error: {e}")
-    except Exception as e:
-        print(f"Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Упаковка (₸)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcPacking" type="number" placeholder="200" oninput="calcUpdate()"/>
+            <span>₸</span>
+          </div>
+        </div>
 
-@app.get("/test")
-async def test():
-    return {
-        "anthropic_key_set": bool(ANTHROPIC_KEY),
-        "supabase_key_set": bool(SUPABASE_SERVICE_KEY),
-        "status": "ok"
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Количество в месяц (шт)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcQty" type="number" placeholder="30" oninput="calcUpdate()"/>
+            <span>шт</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Желаемая цена продажи (₸)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcSell" type="number" placeholder="15000" oninput="calcUpdate()"/>
+            <span>₸</span>
+          </div>
+          <div style="font-size:10px;color:#374151;margin-top:4px">Оставьте пустым — рассчитаем оптимальную</div>
+        </div>
+
+        <div style="margin-bottom:4px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Комиссия Kaspi (%)</label>
+          <div class="calc-input-wrap">
+            <input class="calc-input" id="calcCommission" type="number" value="15" oninput="calcUpdate()"/>
+            <span>%</span>
+          </div>
+          <div style="font-size:10px;color:#374151;margin-top:4px">Стандартная комиссия Kaspi — 15%</div>
+        </div>
+
+        <div style="margin-top:14px">
+          <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:8px">Режим налогообложения</label>
+          <div style="display:flex;flex-direction:column;gap:8px">
+
+            <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#060b14;border:1px solid #1e2a3a;border-radius:10px;cursor:pointer" id="taxLabel1">
+              <input type="radio" name="taxMode" value="3" onchange="setTax(3,'taxLabel1')" checked style="margin-top:2px;width:auto;height:auto;background:none;border:none;accent-color:#f97316"/>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#e2e8f0">ИП — Упрощённая декларация <span style="color:#10b981">3%</span></div>
+                <div style="font-size:10px;color:#6b7280;margin-top:2px">Оборот до 24 038 МРП (~88 млн ₸/год). Подходит большинству новичков на Kaspi</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#060b14;border:1px solid #1e2a3a;border-radius:10px;cursor:pointer" id="taxLabel2">
+              <input type="radio" name="taxMode" value="16" onchange="setTax(16,'taxLabel2')" style="margin-top:2px;width:auto;height:auto;background:none;border:none;accent-color:#f97316"/>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#e2e8f0">ИП — Общеустановленный режим <span style="color:#f59e0b">16%</span></div>
+                <div style="font-size:10px;color:#6b7280;margin-top:2px">Оборот выше 88 млн ₸/год или особые виды деятельности</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#060b14;border:1px solid #1e2a3a;border-radius:10px;cursor:pointer" id="taxLabel3">
+              <input type="radio" name="taxMode" value="20" onchange="setTax(20,'taxLabel3')" style="margin-top:2px;width:auto;height:auto;background:none;border:none;accent-color:#f97316"/>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#e2e8f0">ТОО — КПН <span style="color:#f59e0b">20%</span></div>
+                <div style="font-size:10px;color:#6b7280;margin-top:2px">Для юридических лиц. Обычно используется при работе с крупными поставщиками</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#060b14;border:1px solid #ef444430;border-radius:10px;cursor:pointer" id="taxLabel4">
+              <input type="radio" name="taxMode" value="0" onchange="setTax(0,'taxLabel4')" style="margin-top:2px;width:auto;height:auto;background:none;border:none;accent-color:#f97316"/>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#e2e8f0">Физлицо / без ИП <span style="color:#ef4444">0%</span></div>
+                <div style="font-size:10px;color:#ef4444;margin-top:2px">⚠️ Не рекомендуется — при обороте от 1 МРП (3 692 ₸) нужно платить налог. Риск штрафов</div>
+              </div>
+            </label>
+
+          </div>
+          <div style="font-size:10px;color:#374151;margin-top:8px">💡 Не знаете свой режим? Выберите "Упрощённая декларация 3%" — это стандарт для новичков на Kaspi</div>
+        </div>
+      </div>
+
+      <!-- Right: results -->
+      <div>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">📊 РЕЗУЛЬТАТ</div>
+          <div id="calcResults">
+            <div style="text-align:center;padding:20px;color:#374151;font-size:13px">
+              Введите закупочную цену чтобы увидеть расчёт
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="calcAdvice" style="display:none">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">💡 РЕКОМЕНДАЦИИ</div>
+          <div id="calcAdviceText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div id="authModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div id="authView">
+      <h2>Войдите в аккаунт</h2>
+      <p>Бесплатно: 3 анализа в день</p>
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="switchTab('login')">Вход</div>
+        <div class="auth-tab" onclick="switchTab('register')">Регистрация</div>
+      </div>
+      <div id="authMsg"></div>
+      <input class="auth-input" id="authEmail" type="email" placeholder="Email адрес"/>
+      <div class="pass-wrap">
+        <input class="auth-input" id="authPass" type="password" placeholder="Пароль" oninput="onPassInput()" onkeydown="if(event.key==='Enter')doAuth()"/>
+        <span class="pass-toggle" onclick="togglePass('authPass',this)">👁</span>
+      </div>
+      <div id="strengthWrap" style="display:none">
+        <div class="strength-bars">
+          <div class="strength-bar" id="sb1"></div><div class="strength-bar" id="sb2"></div>
+          <div class="strength-bar" id="sb3"></div><div class="strength-bar" id="sb4"></div>
+        </div>
+        <div class="strength-label" id="strengthLabel"></div>
+        <div class="pass-rules">
+          <div class="pass-rule" id="r-len">Минимум 8 символов</div>
+          <div class="pass-rule" id="r-upper">Заглавная буква (A-Z)</div>
+          <div class="pass-rule" id="r-lower">Строчная буква (a-z)</div>
+          <div class="pass-rule" id="r-num">Цифра (0-9)</div>
+          <div class="pass-rule" id="r-spec">Спецсимвол (!@#$%^&*)</div>
+        </div>
+      </div>
+      <div id="forgotLink" class="forgot-link"><span onclick="showForgot()">Забыли пароль?</span></div>
+      <div id="authNameWrap" style="display:none">
+        <input class="auth-input" id="authName" type="text" placeholder="Ваше имя (необязательно)"/>
+      </div>
+      <button class="btn-primary" id="authBtn" onclick="doAuth()">Войти</button>
+      <button class="btn-secondary" onclick="closeAuthModal()">Отмена</button>
+    </div>
+    <div id="forgotView" style="display:none">
+      <h2>Сброс пароля</h2>
+      <p>Введите ваш email — отправим ссылку для сброса пароля</p>
+      <div id="forgotMsg"></div>
+      <input class="auth-input" id="forgotEmail" type="email" placeholder="Email адрес"/>
+      <button class="btn-primary" onclick="doForgot()">Отправить ссылку</button>
+      <button class="btn-secondary" onclick="showLogin()">← Назад</button>
+    </div>
+    <div id="newPassView" style="display:none">
+      <h2>Новый пароль</h2>
+      <p>Придумайте надёжный пароль</p>
+      <div id="newPassMsg"></div>
+      <div class="pass-wrap">
+        <input class="auth-input" id="newPass" type="password" placeholder="Новый пароль" oninput="onNewPassInput()"/>
+        <span class="pass-toggle" onclick="togglePass('newPass',this)">👁</span>
+      </div>
+      <div class="strength-bars">
+        <div class="strength-bar" id="nsb1"></div><div class="strength-bar" id="nsb2"></div>
+        <div class="strength-bar" id="nsb3"></div><div class="strength-bar" id="nsb4"></div>
+      </div>
+      <div class="strength-label" id="nStrengthLabel" style="margin-bottom:8px"></div>
+      <div class="pass-rules" style="margin-bottom:12px">
+        <div class="pass-rule" id="nr-len">Минимум 8 символов</div>
+        <div class="pass-rule" id="nr-upper">Заглавная буква (A-Z)</div>
+        <div class="pass-rule" id="nr-lower">Строчная буква (a-z)</div>
+        <div class="pass-rule" id="nr-num">Цифра (0-9)</div>
+        <div class="pass-rule" id="nr-spec">Спецсимвол (!@#$%^&*)</div>
+      </div>
+      <div class="pass-wrap" style="margin-bottom:12px">
+        <input class="auth-input" id="newPassConfirm" type="password" placeholder="Повторите пароль" style="margin-bottom:0"/>
+        <span class="pass-toggle" onclick="togglePass('newPassConfirm',this)">👁</span>
+      </div>
+      <button class="btn-primary" id="newPassBtn" onclick="doNewPass()">Сохранить пароль</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cabinet Modal -->
+<div id="cabinetModal" class="modal-overlay" style="display:none">
+  <div class="modal-wide">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h2 style="margin-bottom:0">👤 Личный кабинет</h2>
+      <button onclick="closeCabinet()" style="background:none;color:#6b7280;font-size:20px;padding:4px 8px">✕</button>
+    </div>
+    <div class="cabinet-tabs">
+      <button class="cab-tab active" onclick="switchCabTab('profile')">Профиль</button>
+      <button class="cab-tab" onclick="switchCabTab('history')">История</button>
+    </div>
+    <div id="cabProfile">
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff" id="cabAvatar">?</div>
+          <div>
+            <div style="font-weight:700;font-size:15px" id="cabEmail">—</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px" id="cabSince">—</div>
+          </div>
+          <div style="margin-left:auto" id="cabPlanBadge"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <div class="card" style="text-align:center">
+          <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТАРИФ</div>
+          <div style="font-size:16px;font-weight:900;color:#f97316" id="cabPlan">Бесплатный</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:10px;color:#4b5563;margin-bottom:4px">СЕГОДНЯ</div>
+          <div style="font-size:16px;font-weight:900" id="cabUsedToday">0/3</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ВСЕГО АНАЛИЗОВ</div>
+          <div style="font-size:16px;font-weight:900;color:#10b981" id="cabTotal">0</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🚀 ТАРИФЫ</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:#060b14;border-radius:10px;padding:14px;border:1px solid #1e2a3a">
+            <div style="font-weight:900;font-size:14px;margin-bottom:4px">Базовый</div>
+            <div style="font-size:20px;font-weight:900;color:#f97316;margin-bottom:8px">2 990 ₸<span style="font-size:11px;color:#6b7280">/мес</span></div>
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">✓ 50 анализов в день</div>
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:12px">✓ Все платформы</div>
+            <button style="width:100%;padding:8px;background:#f97316;color:#fff;border-radius:8px;border:none;font-weight:700;font-size:12px;cursor:pointer">Подключить</button>
+          </div>
+          <div style="background:#060b14;border-radius:10px;padding:14px;border:1px solid #10b98140">
+            <div style="font-weight:900;font-size:14px;margin-bottom:4px">Про <span class="pill" style="background:#10b98120;color:#10b981;font-size:9px">Лучший</span></div>
+            <div style="font-size:20px;font-weight:900;color:#10b981;margin-bottom:8px">7 990 ₸<span style="font-size:11px;color:#6b7280">/мес</span></div>
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">✓ Безлимит</div>
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">✓ Excel загрузка</div>
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:12px">✓ Экспорт PDF</div>
+            <button style="width:100%;padding:8px;background:#10b981;color:#fff;border-radius:8px;border:none;font-weight:700;font-size:12px;cursor:pointer">Подключить</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn-secondary" onclick="logout()">Выйти из аккаунта</button>
+    </div>
+    <div id="cabHistory" style="display:none">
+      <div id="historyList">
+        <div style="text-align:center;padding:30px;color:#4b5563">Загружаем историю...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://kbdrjwvbkdbhjokyqlzy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_H464vwbrdU4BKP14YtYkLg_J7rjRkBO';
+const API = 'https://kaspi-analyst-backend.onrender.com';
+const FREE_LIMIT = 3;
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let D = null, currentUser = null, authMode = 'login';
+
+fetch(`${API}/`).catch(()=>{});
+
+async function init() {
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery')) {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) { currentUser = session.user; openAuthModal(); showNewPass(); return; }
     }
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) currentUser = session.user;
+    renderUserBar();
+    sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') { currentUser = session?.user||null; openAuthModal(); showNewPass(); }
+        else { currentUser = session?.user||null; renderUserBar(); }
+    });
+}
+
+// Main tabs
+function switchMainTab(tab) {
+    document.getElementById('analyzeSection').style.display = tab==='analyze'?'block':'none';
+    document.getElementById('calcSection').style.display = tab==='calc'?'block':'none';
+    document.getElementById('tabAnalyze').className = 'tab'+(tab==='analyze'?' on':'');
+    document.getElementById('tabCalc').className = 'tab'+(tab==='calc'?' on':'');
+}
+
+function setTax(val, labelId) {
+    ["taxLabel1","taxLabel2","taxLabel3","taxLabel4"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.borderColor = id === labelId ? "#f97316" : (id === "taxLabel4" ? "#ef444430" : "#1e2a3a");
+    });
+    calcUpdate();
+}
+// Calculator
+function calcUpdate() {
+    const buy = parseFloat(document.getElementById('calcBuy').value)||0;
+    const delivery = parseFloat(document.getElementById('calcDelivery').value)||0;
+    const packing = parseFloat(document.getElementById('calcPacking').value)||0;
+    const qty = parseFloat(document.getElementById('calcQty').value)||30;
+    const sellInput = parseFloat(document.getElementById('calcSell').value)||0;
+    const commission = parseFloat(document.getElementById('calcCommission').value)||15;
+    const taxRadio = document.querySelector('input[name="taxMode"]:checked'); const tax = taxRadio ? parseFloat(taxRadio.value) : 3;
+
+    if (!buy) {
+        document.getElementById('calcResults').innerHTML = '<div style="text-align:center;padding:20px;color:#374151;font-size:13px">Введите закупочную цену чтобы увидеть расчёт</div>';
+        document.getElementById('calcAdvice').style.display='none';
+        return;
+    }
+
+    const costPerUnit = buy + delivery + packing;
+
+    // Если пользователь не ввёл цену продажи — рассчитываем оптимальную
+    // Оптимальная цена = себестоимость / (1 - комиссия% - налог% - желаемая маржа 30%)
+    const targetMargin = 0.30;
+    const optimalSell = sellInput || Math.ceil(costPerUnit / (1 - commission/100 - tax/100 - targetMargin));
+    const sell = sellInput || optimalSell;
+
+    const commissionAmt = sell * commission / 100;
+    const taxAmt = sell * tax / 100;
+    const netProfit = sell - costPerUnit - commissionAmt - taxAmt;
+    const marginPct = Math.round(netProfit / sell * 100);
+    const monthlyProfit = Math.round(netProfit * qty);
+    const breakEven = netProfit > 0 ? Math.ceil(costPerUnit / netProfit) : 999;
+    const roi = Math.round(netProfit / costPerUnit * 100);
+
+    const isGood = marginPct >= 25;
+    const isOk = marginPct >= 10 && marginPct < 25;
+    const isBad = marginPct < 10;
+
+    const verdictClass = isGood ? 'calc-good' : isOk ? 'calc-ok' : 'calc-bad';
+    const verdictText = isGood ? '✅ ВЫГОДНО — хорошая маржа' : isOk ? '⚠️ ОСТОРОЖНО — маржа низкая' : '❌ НЕ ВЫГОДНО — маржа слишком низкая';
+
+    document.getElementById('calcResults').innerHTML = `
+        <div class="calc-result-row">
+            <span class="calc-label">Себестоимость единицы</span>
+            <span class="calc-value">${fmt(costPerUnit)} ₸</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Оптимальная цена продажи</span>
+            <span class="calc-value" style="color:#f97316">${fmt(Math.round(optimalSell))} ₸</span>
+        </div>
+        ${sellInput ? `<div class="calc-result-row">
+            <span class="calc-label">Ваша цена продажи</span>
+            <span class="calc-value">${fmt(Math.round(sell))} ₸</span>
+        </div>` : ''}
+        <div class="calc-result-row">
+            <span class="calc-label">Комиссия Kaspi (${commission}%)</span>
+            <span class="calc-value" style="color:#ef4444">-${fmt(Math.round(commissionAmt))} ₸</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Налог ИП (${tax}%)</span>
+            <span class="calc-value" style="color:#ef4444">-${fmt(Math.round(taxAmt))} ₸</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Чистая прибыль с единицы</span>
+            <span class="calc-value" style="color:${netProfit>0?'#10b981':'#ef4444'}">${fmt(Math.round(netProfit))} ₸</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Маржа</span>
+            <span class="calc-value" style="color:${isGood?'#10b981':isOk?'#f59e0b':'#ef4444'}">${marginPct}%</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">ROI</span>
+            <span class="calc-value" style="color:${roi>30?'#10b981':'#f59e0b'}">${roi}%</span>
+        </div>
+        <div class="calc-result-row">
+            <span class="calc-label">Прибыль в месяц (${qty} шт)</span>
+            <span class="calc-value" style="color:#10b981;font-size:15px">${fmt(monthlyProfit)} ₸</span>
+        </div>
+        <div class="calc-result-row" style="border-bottom:none">
+            <span class="calc-label">Окупаемость партии</span>
+            <span class="calc-value">${breakEven} шт</span>
+        </div>
+        <div class="calc-verdict ${verdictClass}">${verdictText}</div>
+    `;
+
+    // Advice
+    const adviceEl = document.getElementById('calcAdvice');
+    const adviceText = document.getElementById('calcAdviceText');
+    adviceEl.style.display='block';
+
+    // Рассчитываем оптимальную цену независимо от введённой
+    const calcOptimal = Math.ceil(costPerUnit / (1 - commission/100 - tax/100 - 0.30));
+
+    let advice = [];
+    if (isBad) {
+        advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#ef4444">⚠️ Маржа ${marginPct}% — слишком низкая для стабильного бизнеса</div>`);
+        if (sellInput && sellInput < calcOptimal) {
+            advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 При вашей цене ${fmt(Math.round(sellInput))} ₸ бизнес убыточен. Рекомендуемая цена продажи: <strong>${fmt(calcOptimal)} ₸</strong></div>`);
+        } else {
+            advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Попробуйте найти поставщика дешевле. При текущей себестоимости рекомендуемая цена: <strong>${fmt(calcOptimal)} ₸</strong></div>`);
+        }
+    }
+    if (isOk) {
+        if (sellInput && sellInput < calcOptimal) {
+            advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Маржа приемлемая. Для увеличения прибыли можно поднять цену до <strong>${fmt(calcOptimal)} ₸</strong></div>`);
+        } else {
+            advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Маржа приемлемая. Попробуйте снизить себестоимость для увеличения прибыли</div>`);
+        }
+    }
+    if (isGood) {
+        advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#10b981">✅ Отличная маржа! При ${qty} продажах в месяц заработаете ${fmt(monthlyProfit)} ₸</div>`);
+    }
+    advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">📦 Для окупаемости одной партии нужно продать ${breakEven} шт</div>`);
+    advice.push(`<div style="padding:6px 0;font-size:12px;color:#d1d5db">🔍 Сделайте анализ ниши чтобы узнать реальный спрос на этот товар</div>`);
+
+    adviceText.innerHTML = advice.join('');
+}
+
+function renderUserBar() {
+    const bar = document.getElementById('userBar');
+    if (currentUser) {
+        const left = Math.max(0, FREE_LIMIT - getUsedToday());
+        bar.innerHTML = `<div class="user-bar">
+            <span class="email">👤 ${currentUser.email}</span>
+            <span class="limit">🔍 ${left}/${FREE_LIMIT}</span>
+            <button class="btn-cabinet" onclick="openCabinet()">Кабинет</button>
+            <button class="btn-logout" onclick="logout()">Выйти</button>
+        </div>`;
+    } else {
+        bar.innerHTML = `<button class="btn-login" onclick="openAuthModal()">Войти / Регистрация</button>`;
+    }
+}
+
+function getUsedToday() {
+    const key = `ma_used_${new Date().toDateString()}_${currentUser?.id||'guest'}`;
+    return parseInt(localStorage.getItem(key)||'0');
+}
+function incrementUsed() {
+    const key = `ma_used_${new Date().toDateString()}_${currentUser?.id||'guest'}`;
+    localStorage.setItem(key, getUsedToday()+1);
+}
+
+function show(id) {
+    ['loading','err','result','empty'].forEach(x => {
+        const el = document.getElementById(x);
+        if(el) el.style.display = x===id?'block':'none';
+    });
+}
+function fmt(n) { return n ? Number(n).toLocaleString('ru-KZ') : '0'; }
+function setQ(v) { document.getElementById('q').value=v; run(); }
+
+async function saveHistory(query, ai, stats) {
+    if (!currentUser) return;
+    try {
+        await sb.from('search_history').insert({
+            user_id: currentUser.id, query,
+            verdict: ai.verdict||null, niche_score: ai.nicheScore||null,
+            demand_score: ai.demandScore||null, margin_score: ai.marginScore||null,
+            competition_score: ai.competitionScore||null, optimal_price: ai.optimalPrice||null,
+            margin_pct: ai.marginPct||null, monthly_profit: ai.monthlyProfit||null,
+            avg_price: stats.avgPrice||null,
+        });
+    } catch(e) { console.error('History save error:', e); }
+}
+
+async function run() {
+    const q = document.getElementById('q').value.trim();
+    if (!q) return;
+    show('loading');
+    try {
+        const session = (await sb.auth.getSession()).data.session;
+        const token = session?.access_token || null;
+
+        const r = await fetch(`${API}/analyze`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({query: q, token: token})
+        });
+
+        // Обрабатываем лимит на стороне сервера
+        if (r.status === 429) {
+            const err = await r.json();
+            show('empty');
+            openAuthModal();
+            showMsg(err.detail?.message || 'Лимит исчерпан. Войдите для продолжения.', 'error');
+            return;
+        }
+
+        if (!r.ok) throw new Error(`Ошибка сервера ${r.status}`);
+        D = await r.json();
+        incrementUsed(); renderUserBar();
+        await saveHistory(q, D.ai||{}, D.stats||{});
+        renderResult('niche'); show('result');
+    } catch(e) {
+        document.getElementById('errmsg').textContent = e.message||'Неизвестная ошибка';
+        show('err');
+    }
+}
+
+// Cabinet
+async function openCabinet() {
+    document.getElementById('cabinetModal').style.display='flex';
+    switchCabTab('profile');
+    const email = currentUser.email;
+    document.getElementById('cabEmail').textContent = email;
+    document.getElementById('cabAvatar').textContent = email[0].toUpperCase();
+    const since = new Date(currentUser.created_at).toLocaleDateString('ru-KZ',{day:'numeric',month:'long',year:'numeric'});
+    document.getElementById('cabSince').textContent = `С ${since}`;
+    document.getElementById('cabUsedToday').textContent = `${getUsedToday()}/${FREE_LIMIT}`;
+    document.getElementById('cabPlan').textContent = 'Бесплатный';
+    document.getElementById('cabPlanBadge').innerHTML = '<span class="plan-badge plan-free">FREE</span>';
+    const { count } = await sb.from('search_history').select('*',{count:'exact',head:true}).eq('user_id',currentUser.id);
+    document.getElementById('cabTotal').textContent = count||0;
+}
+function closeCabinet() { document.getElementById('cabinetModal').style.display='none'; }
+function switchCabTab(tab) {
+    document.querySelectorAll('.cab-tab').forEach((t,i) => {
+        t.classList.toggle('active',(i===0&&tab==='profile')||(i===1&&tab==='history'));
+    });
+    document.getElementById('cabProfile').style.display = tab==='profile'?'block':'none';
+    document.getElementById('cabHistory').style.display = tab==='history'?'block':'none';
+    if(tab==='history') loadHistory();
+}
+async function loadHistory() {
+    const list = document.getElementById('historyList');
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:#4b5563">Загружаем...</div>';
+    const { data, error } = await sb.from('search_history').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(50);
+    if (error||!data||data.length===0) {
+        list.innerHTML='<div style="text-align:center;padding:30px;color:#4b5563"><div style="font-size:32px;margin-bottom:8px">📭</div><div>История пуста — сделайте первый анализ!</div></div>';
+        return;
+    }
+    list.innerHTML=data.map(item => {
+        const date=new Date(item.created_at).toLocaleDateString('ru-KZ',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+        const vClass=item.verdict==='ВОЙТИ'?'v-enter':item.verdict==='НЕ ВХОДИТЬ'?'v-no':'v-careful';
+        return `<div class="history-item" onclick="repeatSearch('${item.query}')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="font-weight:700;font-size:14px;flex:1">${item.query}</span>
+                ${item.verdict?`<span class="history-verdict ${vClass}">${item.verdict}</span>`:''}
+                <span style="font-size:10px;color:#4b5563">${date}</span>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+                ${item.optimal_price?`<span style="font-size:11px;color:#9ca3af">💰 ${fmt(item.optimal_price)} ₸</span>`:''}
+                ${item.margin_pct?`<span style="font-size:11px;color:#9ca3af">📈 ${item.margin_pct}% маржа</span>`:''}
+                ${item.niche_score?`<span style="font-size:11px;color:#9ca3af">⭐ Ниша ${item.niche_score}/100</span>`:''}
+                ${item.monthly_profit?`<span style="font-size:11px;color:#10b981">💵 ${fmt(item.monthly_profit)} ₸/мес</span>`:''}
+            </div>
+        </div>`;
+    }).join('');
+}
+function repeatSearch(query) { closeCabinet(); document.getElementById('q').value=query; switchMainTab('analyze'); run(); }
+
+// Auth
+function openAuthModal() { document.getElementById('authModal').style.display='flex'; showLogin(); }
+function closeAuthModal() { document.getElementById('authModal').style.display='none'; }
+function showLogin() {
+    ['authView','forgotView','newPassView'].forEach(id => {
+        document.getElementById(id).style.display=id==='authView'?'block':'none';
+    });
+    document.getElementById('authMsg').innerHTML='';
+}
+function showForgot() {
+    ['authView','forgotView','newPassView'].forEach(id => {
+        document.getElementById(id).style.display=id==='forgotView'?'block':'none';
+    });
+    const email=document.getElementById('authEmail').value;
+    if(email) document.getElementById('forgotEmail').value=email;
+}
+function showNewPass() {
+    ['authView','forgotView','newPassView'].forEach(id => {
+        document.getElementById(id).style.display=id==='newPassView'?'block':'none';
+    });
+}
+function switchTab(mode) {
+    authMode=mode;
+    document.querySelectorAll('.auth-tab').forEach((t,i) => {
+        t.classList.toggle('active',(i===0&&mode==='login')||(i===1&&mode==='register'));
+    });
+    document.getElementById('authBtn').textContent=mode==='login'?'Войти':'Зарегистрироваться';
+    document.getElementById('authBtn').disabled=false;
+    document.getElementById('authNameWrap').style.display=mode==='register'?'block':'none';
+    document.getElementById('forgotLink').style.display=mode==='login'?'block':'none';
+    document.getElementById('strengthWrap').style.display=mode==='register'?'block':'none';
+    document.getElementById('authMsg').innerHTML='';
+    document.getElementById('authPass').value='';
+}
+function showMsg(text,type) { document.getElementById('authMsg').innerHTML=`<div class="msg-${type}">${text}</div>`; }
+
+function checkPass(p) {
+    return{len:p.length>=8,upper:/[A-Z]/.test(p),lower:/[a-z]/.test(p),num:/[0-9]/.test(p),spec:/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p)};
+}
+function updateStrength(p,prefix) {
+    const c=checkPass(p),score=Object.values(c).filter(Boolean).length;
+    const keys=['len','upper','lower','num','spec'];
+    const ids=prefix==='n'?['nr-len','nr-upper','nr-lower','nr-num','nr-spec']:['r-len','r-upper','r-lower','r-num','r-spec'];
+    ids.forEach((id,i)=>{document.getElementById(id).className='pass-rule'+(c[keys[i]]?' ok':'');});
+    const colors=['','#ef4444','#f59e0b','#f97316','#10b981','#10b981'];
+    const labels=['','Очень слабый','Слабый','Средний','Сильный','Очень сильный'];
+    for(let i=1;i<=4;i++) document.getElementById(prefix+'sb'+i).style.background=i<=score?colors[score]:'#1e2a3a';
+    const lbl=document.getElementById(prefix==='n'?'nStrengthLabel':'strengthLabel');
+    lbl.textContent=p?labels[score]:'';lbl.style.color=colors[score];
+    return score;
+}
+function onPassInput(){if(authMode!=='register')return;const score=updateStrength(document.getElementById('authPass').value,'');document.getElementById('authBtn').disabled=document.getElementById('authPass').value.length>0&&score<3;}
+function onNewPassInput(){updateStrength(document.getElementById('newPass').value,'n');}
+function togglePass(id,btn){const inp=document.getElementById(id);inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'👁':'🙈';}
+
+async function doAuth() {
+    const email=document.getElementById('authEmail').value.trim();
+    const pass=document.getElementById('authPass').value;
+    if(!email||!pass){showMsg('Заполните все поля','error');return;}
+    if(authMode==='register'&&Object.values(checkPass(pass)).filter(Boolean).length<3){showMsg('Пароль слишком слабый','error');return;}
+    document.getElementById('authBtn').textContent='...';
+    if(authMode==='login'){
+        const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+        if(error){showMsg('Неверный email или пароль','error');document.getElementById('authBtn').textContent='Войти';return;}
+        currentUser=data.user;closeAuthModal();renderUserBar();
+    } else {
+        const{error}=await sb.auth.signUp({email,password:pass});
+        if(error){showMsg(error.message,'error');document.getElementById('authBtn').textContent='Зарегистрироваться';return;}
+        showMsg('✅ Проверьте почту и подтвердите email!','success');
+        document.getElementById('authBtn').textContent='Зарегистрироваться';
+    }
+}
+async function doForgot(){
+    const email=document.getElementById('forgotEmail').value.trim();
+    if(!email){document.getElementById('forgotMsg').innerHTML='<div class="msg-error">Введите email</div>';return;}
+    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://marketanalyst.kz'});
+    document.getElementById('forgotMsg').innerHTML=error?`<div class="msg-error">${error.message}</div>`:'<div class="msg-success">✅ Ссылка отправлена! Проверьте почту.</div>';
+}
+async function doNewPass(){
+    const pass=document.getElementById('newPass').value,confirm=document.getElementById('newPassConfirm').value;
+    if(!pass||!confirm){document.getElementById('newPassMsg').innerHTML='<div class="msg-error">Заполните все поля</div>';return;}
+    if(pass!==confirm){document.getElementById('newPassMsg').innerHTML='<div class="msg-error">Пароли не совпадают</div>';return;}
+    if(Object.values(checkPass(pass)).filter(Boolean).length<3){document.getElementById('newPassMsg').innerHTML='<div class="msg-error">Пароль слишком слабый</div>';return;}
+    document.getElementById('newPassBtn').textContent='...';
+    const{error}=await sb.auth.updateUser({password:pass});
+    if(error){document.getElementById('newPassMsg').innerHTML=`<div class="msg-error">${error.message}</div>`;document.getElementById('newPassBtn').textContent='Сохранить пароль';}
+    else{document.getElementById('newPassMsg').innerHTML='<div class="msg-success">✅ Пароль успешно изменён!</div>';setTimeout(()=>{closeAuthModal();renderUserBar();},1500);}
+}
+async function logout(){await sb.auth.signOut();currentUser=null;closeCabinet();renderUserBar();}
+
+// Results
+function scoreColor(v,invert=false){const val=invert?(100-v):v;return val>=70?'#10b981':val>=40?'#f59e0b':'#ef4444';}
+function scoreBar(label,value,invert=false){
+    const v=Number(value)||0;
+    return`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#9ca3af">${label}</span><span style="font-weight:700;color:${scoreColor(v,invert)}">${v}/100</span></div><div class="score-bar"><div class="score-fill" style="width:${v}%;background:${scoreColor(v,invert)}"></div></div></div>`;
+}
+function renderResult(tabId){
+    if(!D)return;
+    const stats=D.stats||{},competitors=Array.isArray(D.competitors)?D.competitors:[],ai=D.ai||{};
+    const hasAI=ai&&!ai.error&&typeof ai.verdict==='string'&&ai.verdict.length>0;
+    const verdict=hasAI?ai.verdict:'—',verdictText=hasAI?(ai.verdictText||''):'AI-анализ недоступен.';
+    const vc=verdict==='ВОЙТИ'?'#10b981':verdict==='НЕ ВХОДИТЬ'?'#ef4444':'#f59e0b';
+    const nicheScore=Number(hasAI?(ai.nicheScore??stats.nicheScore??0):(stats.nicheScore??0));
+    const demandScore=Number(hasAI?(ai.demandScore??stats.demandScore??0):(stats.demandScore??0));
+    const marginScore=Number(hasAI?(ai.marginScore??0):0);
+    const compScore=Number(hasAI?(ai.competitionScore??stats.competitionScore??0):(stats.competitionScore??0));
+    const optimalPrice=hasAI&&ai.optimalPrice?fmt(ai.optimalPrice)+' ₸':'—';
+    const marginPct=hasAI&&ai.marginPct?ai.marginPct+'%':'—';
+    const monthlyProfit=hasAI&&ai.monthlyProfit?fmt(ai.monthlyProfit)+' ₸':'—';
+    const breakEvenUnits=hasAI&&ai.breakEvenUnits?ai.breakEvenUnits+' шт.':'—';
+
+    let content=`
+    <div class="card" style="border-left:4px solid ${vc};margin-bottom:15px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:22px;font-weight:900;color:${vc}">${verdict}</span>
+            <button onclick="switchMainTab('calc')" style="padding:6px 14px;background:#f9731620;color:#f97316;border:1px solid #f9731640;border-radius:8px;font-size:11px">🧮 Рассчитать экономику →</button>
+        </div>
+        <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:15px" class="stats-grid">
+        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТОВАРОВ В НИШЕ</div><div style="font-size:22px;font-weight:900;color:#f97316">${stats.totalFound??0}</div></div>
+        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">СРЕДНЯЯ ЦЕНА</div><div style="font-size:18px;font-weight:900">${fmt(stats.avgPrice)} ₸</div></div>
+        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ВСЕГО ОТЗЫВОВ</div><div style="font-size:18px;font-weight:900">${fmt(stats.totalReviews)}</div></div>
+        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ОПТИМ. ЦЕНА</div><div style="font-size:18px;font-weight:900;color:#10b981">${optimalPrice}</div></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:15px">
+        <button class="tab ${tabId==='niche'?'on':''}" onclick="renderResult('niche')">Ниша</button>
+        <button class="tab ${tabId==='rivals'?'on':''}" onclick="renderResult('rivals')">Конкуренты</button>
+    </div>`;
+
+    if(tabId==='niche'){
+        const opps=hasAI?(Array.isArray(ai.freeSegments)&&ai.freeSegments.length?ai.freeSegments:(Array.isArray(ai.topOpportunities)?ai.topOpportunities:[])):[];
+        const risks=hasAI&&Array.isArray(ai.topRisks)?ai.topRisks:[];
+        const keywords=hasAI&&Array.isArray(ai.keywords)?ai.keywords:[];
+        content+=`
+        <div style="display:grid;grid-template-columns:1fr;gap:10px">
+            <div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">📊 СКОРЫ НИШИ</div>
+                ${scoreBar('Привлекательность ниши',nicheScore)}${scoreBar('Спрос',demandScore)}${scoreBar('Маржинальность',marginScore)}${scoreBar('Конкуренция (выше = хуже)',compScore,true)}
+            </div>
+            <div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">💰 ФИНАНСЫ</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    ${[['Оптим. цена',optimalPrice],['Маржа',marginPct],['Прибыль/мес.',monthlyProfit],['Окупаемость',breakEvenUnits],['Мин. цена',fmt(stats.minPrice)+' ₸'],['Макс. цена',fmt(stats.maxPrice)+' ₸']].map(([l,v])=>`<div style="background:#060b14;border-radius:8px;padding:8px"><div style="font-size:9px;color:#4b5563">${l}</div><div style="font-weight:700;font-size:13px;margin-top:2px">${v}</div></div>`).join('')}
+                </div>
+            </div>
+        </div>
+        ${opps.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:10px">✅ ВОЗМОЖНОСТИ</div>${opps.map(o=>`<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${o}</div>`).join('')}</div>`:''}
+        ${risks.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:10px">⚠️ РИСКИ</div>${risks.map(r=>`<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${r}</div>`).join('')}</div>`:''}
+        ${keywords.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:10px">🔑 КЛЮЧЕВЫЕ СЛОВА</div><div style="display:flex;flex-wrap:wrap;gap:6px">${keywords.map(k=>`<span class="pill" style="background:#1e2a3a;color:#9ca3af">${k}</span>`).join('')}</div></div>`:''}`;
+    } else {
+        content+=`<div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🏆 КОНКУРЕНТЫ В НИШЕ (${competitors.length})</div>
+            <table><thead><tr><th>ТОВАР</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ПРОДАВЕЦ</th></tr></thead>
+            <tbody>${competitors.length?competitors.map((c,i)=>`<tr><td><a href="${c.url||'#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name||'—'}</a></td><td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td><td><span style="color:#f59e0b">★</span> ${c.rating??'—'}</td><td>${fmt(c.reviews)}</td><td style="color:#6b7280;font-size:11px">${c.seller||'—'}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Нет данных</td></tr>`}</tbody></table></div>`;
+    }
+    document.getElementById('result').innerHTML=content;
+}
+
+init();
+</script>
+</body>
+</html>
