@@ -95,46 +95,53 @@ function show(id){
   });
 }
 
-async function run(){
-  const q = document.getElementById('q').value.trim();
-  if(!q) return;
-  const btn = document.getElementById('btn');
-  btn.disabled=true; btn.textContent='⏳ Загрузка...';
-  show('loading');
+async function run() {
+    const q = document.getElementById('q').value.trim();
+    if (!q) return;
 
-  try {
-    document.getElementById('lstep').textContent='📦 Получаем анализ от сервера...';
-    
-    // Делаем ОДИН запрос к вашему бэкенду
-    const response = await fetch(API+'/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q })
-    });
+    const btn = document.getElementById('btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Анализируем...';
+    show('loading');
 
-    if(!response.ok) throw new Error('Сервер вернул ошибку ' + response.status);
-    
-    // Получаем сразу и статистику, и ответ от AI
-    const data = await response.json();
-    
-    // ВАЖНО: Убедитесь, что бэкенд возвращает объект 'ai' внутри ответа
-    D = {
-      ai: data.ai, 
-      competitors: data.competitors, 
-      stats: data.stats, 
-      query: q, 
-      fromCache: data.fromCache
-    };
-    
-    renderResult('niche');
+    try {
+        // 1. Делаем ОДИН запрос к вашему бэкенду на Render
+        const response = await fetch('https://kaspi-analyst-backend.onrender.com/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q })
+        });
 
-  } catch(e){
-    document.getElementById('errmsg').textContent = e.message || 'Неизвестная ошибка';
-    show('err');
-  }
+        if (!response.ok) throw new Error('Сервер Render не отвечает (код ' + response.status + ')');
 
-  btn.disabled=false; btn.textContent='Анализировать →';
-  btn.style.background='linear-gradient(135deg,#f97316,#fb923c)'; btn.style.color='#fff';
+        const data = await response.json();
+
+        // 2. Проверяем, пришел ли ответ от AI
+        if (data.ai && data.ai.error) {
+             throw new Error('AI временно недоступен: ' + data.ai.error);
+        }
+
+        // 3. Сохраняем данные для отрисовки графиков
+        // Мы берем данные, которые бэкенд уже собрал для нас
+        D = {
+            ai: data.ai,
+            stats: data.stats,
+            competitors: data.competitors,
+            query: q,
+            fromCache: data.fromCache
+        };
+
+        // 4. Отрисовываем результат
+        renderResult('niche');
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById('errmsg').textContent = 'Ошибка: ' + e.message;
+        show('err');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Анализировать →';
+    }
 }
 function renderResult(tabId){
   const {ai,competitors,stats,fromCache} = D;
