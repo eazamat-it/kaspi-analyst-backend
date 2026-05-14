@@ -30,45 +30,41 @@ async def analyze(body: dict):
     if not ANTHROPIC_KEY:
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
 
-    prompt = f"""Ты эксперт по маркетплейсу Kaspi.kz (Казахстан). Проанализируй нишу "{query}".
+prompt = f"""Ты эксперт по маркетплейсу Kaspi.kz (Казахстан). Проанализируй нишу "{query}".
 
 Верни ТОЛЬКО валидный JSON, без пояснений, без markdown, без ```json:
 {{
-  "verdict": "ВОЙТИ",
-  "verdictText": "2-3 предложения с обоснованием",
-  "nicheScore": 75,
-  "demandScore": 80,
-  "marginScore": 60,
-  "competitionScore": 45,
-  "optimalPrice": 15000,
-  "marginPct": 35,
-  "monthlyProfit": 250000,
-  "breakEvenUnits": 20,
-  "freeSegments": ["сегмент 1", "сегмент 2"],
-  "topOpportunities": ["возможность 1", "возможность 2", "возможность 3"],
-  "topRisks": ["риск 1", "риск 2"],
-  "keywords": ["ключ 1", "ключ 2", "ключ 3", "ключ 4"],
+  "verdict": "ВОЙТИ или ОСТОРОЖНО или НЕ ВХОДИТЬ — выбери исходя из реального анализа ниши {query}",
+  "verdictText": "2-3 предложения с обоснованием специфичным для товара {query}",
+  "nicheScore": <реальная оценка привлекательности ниши {query} от 0 до 100>,
+  "demandScore": <реальный спрос на {query} в Казахстане от 0 до 100>,
+  "marginScore": <реальная маржинальность {query} от 0 до 100>,
+  "competitionScore": <реальный уровень конкуренции {query} от 0 до 100>,
+  "optimalPrice": <оптимальная цена {query} в тенге>,
+  "marginPct": <процент маржи для {query}>,
+  "monthlyProfit": <ожидаемая прибыль в месяц в тенге>,
+  "breakEvenUnits": <количество единиц для окупаемости>,
+  "freeSegments": ["свободный сегмент специфичный для {query}"],
+  "topOpportunities": ["возможность 1 для {query}", "возможность 2", "возможность 3"],
+  "topRisks": ["риск 1 для {query}", "риск 2"],
+  "keywords": ["ключевое слово 1 для {query}", "ключевое слово 2", "ключевое слово 3"],
   "stats": {{
-    "totalFound": 120,
-    "avgPrice": 14500,
-    "minPrice": 5000,
-    "maxPrice": 45000,
-    "totalReviews": 8500,
-    "avgReviews": 70,
-    "nicheScore": 75,
-    "competitionScore": 45,
-    "demandScore": 80
+    "totalFound": <реальное примерное количество товаров {query} на Kaspi>,
+    "avgPrice": <средняя цена {query} в тенге>,
+    "minPrice": <минимальная цена {query}>,
+    "maxPrice": <максимальная цена {query}>,
+    "totalReviews": <общее количество отзывов>,
+    "avgReviews": <среднее количество отзывов>,
+    "nicheScore": <то же что выше>,
+    "competitionScore": <то же что выше>,
+    "demandScore": <то же что выше>
   }},
   "competitors": [
-    {{"name": "Название товара", "price": 12000, "rating": 4.7, "reviews": 320, "seller": "Магазин", "url": "https://kaspi.kz/shop/p/example-1", "inStock": true}},
-    {{"name": "Название товара 2", "price": 15500, "rating": 4.5, "reviews": 180, "seller": "Магазин 2", "url": "https://kaspi.kz/shop/p/example-2", "inStock": true}},
-    {{"name": "Название товара 3", "price": 9900, "rating": 4.3, "reviews": 95, "seller": "Магазин 3", "url": "https://kaspi.kz/shop/p/example-3", "inStock": true}},
-    {{"name": "Название товара 4", "price": 18000, "rating": 4.8, "reviews": 450, "seller": "Магазин 4", "url": "https://kaspi.kz/shop/p/example-4", "inStock": true}},
-    {{"name": "Название товара 5", "price": 11000, "rating": 4.2, "reviews": 60, "seller": "Магазин 5", "url": "https://kaspi.kz/shop/p/example-5", "inStock": false}}
+    {{"name": "реальное название товара {query}", "price": <цена>, "rating": <рейтинг>, "reviews": <отзывы>, "seller": "название магазина", "url": "https://kaspi.kz/shop/p/example", "inStock": true}}
   ]
 }}
 
-Важно: verdict может быть только "ВОЙТИ", "ОСТОРОЖНО" или "НЕ ВХОДИТЬ". Все цены в тенге. Данные должны быть реалистичными для казахстанского рынка."""
+Важно: все данные должны быть УНИКАЛЬНЫМИ и РЕАЛИСТИЧНЫМИ именно для товара "{query}" на казахстанском рынке. Не используй одинаковые цифры для разных товаров."""
 
     try:
         async with httpx.AsyncClient(timeout=45.0) as client:
