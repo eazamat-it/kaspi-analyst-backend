@@ -77,24 +77,29 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 
 <script>
 const API = 'https://kaspi-analyst-backend.onrender.com';
-let D = {}; 
+let D = null;
 
-function setQ(v) {
-    document.getElementById('q').value = v;
-    run();
-}
-
-function fmt(n) {
-    return n ? Number(n).toLocaleString('ru-KZ') : '0';
-}
-
+// 1. Управление видимостью блоков
 function show(id) {
-    ['loading', 'err', 'result', 'empty'].forEach(x => {
+    const sections = ['loading', 'err', 'result', 'empty'];
+    sections.forEach(x => {
         const el = document.getElementById(x);
         if (el) el.style.display = (x === id ? 'block' : 'none');
     });
 }
 
+// 2. Форматирование тенге
+function fmt(n) {
+    return n ? Number(n).toLocaleString('ru-KZ') : '0';
+}
+
+// 3. Быстрый выбор запроса
+function setQ(v) {
+    document.getElementById('q').value = v;
+    run();
+}
+
+// 4. Основная логика запроса
 async function run() {
     const qInput = document.getElementById('q');
     const q = qInput.value.trim();
@@ -113,21 +118,19 @@ async function run() {
         });
 
         if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
+
         const data = await response.json();
 
-        if (data.ai && data.ai.error) throw new Error(data.ai.error);
+        if (data.ai && data.ai.error) {
+            throw new Error('AI временно недоступен: ' + data.ai.error);
+        }
 
-        D = {
-            ai: data.ai || {},
-            stats: data.stats || {},
-            competitors: data.competitors || [],
-            query: q,
-            fromCache: data.fromCache || false
-        };
-
-        renderResult('niche');
+        D = data; // Сохраняем данные
+        renderResult('niche'); // Отрисовываем первую вкладку
         show('result');
+
     } catch (e) {
+        console.error('Ошибка выполнения:', e);
         document.getElementById('errmsg').textContent = e.message;
         show('err');
     } finally {
@@ -136,31 +139,16 @@ async function run() {
     }
 }
 
+// 5. Отрисовка результатов
 function renderResult(tabId) {
-    // Добавляем проверку на существование D и вложенных объектов
-    if (!D || !D.ai) {
-        console.error("Данные не загружены или имеют неверный формат", D);
-        return;
-    }
+    if (!D || !D.ai) return;
 
-    const ai = D.ai;
-    const stats = D.stats || {};
-    const competitors = D.competitors || [];
-    const query = D.query || '';
-    const fromCache = D.fromCache || false;
+    const { ai, stats, competitors, fromCache } = D;
+    const verdictColor = ai.verdict === 'ВОЙТИ' ? '#10b981' : ai.verdict === 'ОСТОРОЖНО' ? '#f59e0b' : '#ef4444';
 
-    // Защита от undefined: если данных нет, ставим 0 или "Нет данных"
-    const verdict = ai.verdict || 'Н/Д';
-    const verdictText = ai.verdictText || 'Описание отсутствует';
-    const nicheScore = ai.nicheScore || ai.niche_score || 0;
-    const demandScore = ai.demandScore || ai.demand_score || 0;
-    const marginScore = ai.marginScore || ai.margin_score || 0;
-    
-    const vc = verdict === 'ВОЙТИ' ? '#10b981' : verdict === 'ОСТОРОЖНО' ? '#f59e0b' : '#ef4444';
-    
     const gaugeHTML = (v, l, c) => {
         const val = v || 0;
-        const r = 34, circ = 2 * Math.PI * r, dash = (Math.max(0, Math.min(100, val)) / 100) * circ;
+        const r = 34, circ = 2 * Math.PI * r, dash = (val / 100) * circ;
         return `<div style="text-align:center">
             <svg width="80" height="80">
                 <circle cx="40" cy="40" r="${r}" fill="none" stroke="#1e2030" stroke-width="6"/>
@@ -173,88 +161,41 @@ function renderResult(tabId) {
     };
 
     let tabContent = '';
-    if(tabId === 'niche') {
-        tabContent = `
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                <div class="card"><div style="color:#10b981;font-weight:800;font-size:12px;margin-bottom:10px">🏔️ Свободные сегменты</div>
-                ${(ai.freeSegments || ai.free_segments || ['Нет данных']).map(s => `<div style="font-size:12px;color:#d1d5db;margin-bottom:5px">· ${s}</div>`).join('')}</div>
-                <div class="card"><div style="color:#6366f1;font-weight:800;font-size:12px;margin-bottom:10px">✅ Возможности</div>
-                ${(ai.topOpportunities || ai.top_opportunities || ['Нет данных']).map(o => `<div style="font-size:12px;color:#d1d5db;margin-bottom:5px">→ ${o}</div>`).join('')}</div>
-            </div>`;
-    } else if(tabId === 'prices') {
-        tabContent = `<div class="card">
-            <div style="color:#6366f1;font-weight:800;margin-bottom:12px">📈 Статистика цен</div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-                <div><div style="font-size:10px;color:#4b5563">СРЕДНЯЯ ЦЕНА</div><div style="font-size:24px;font-weight:900;color:#10b981">${fmt(stats.avgPrice || stats.avg_price)} тг</div></div>
-                <div style="text-align:right"><div style="font-size:10px;color:#4b5563">ТРЕНД</div><div style="font-size:18px;font-weight:800;color:#f59e0b">${ai.priceTrend || ai.price_trend || 'СТАБИЛЬНО'}</div></div>
-            </div>
+    if (tabId === 'niche') {
+        tabContent = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="card"><div style="color:#10b981;font-weight:800;font-size:12px;margin-bottom:10px">🏔️ Свободные сегменты</div>
+            ${(ai.freeSegments || []).map(s => `<div style="font-size:12px;color:#d1d5db;margin-bottom:5px">· ${s}</div>`).join('')}</div>
+            <div class="card"><div style="color:#6366f1;font-weight:800;font-size:12px;margin-bottom:10px">✅ Возможности</div>
+            ${(ai.topOpportunities || []).map(o => `<div style="font-size:12px;color:#d1d5db;margin-bottom:5px">→ ${o}</div>`).join('')}</div>
         </div>`;
-    } else if(tabId === 'rivals') {
+    } else if (tabId === 'rivals') {
         tabContent = `<div class="card" style="padding:0;overflow:hidden">
             <table>
                 <thead><tr><th>Товар</th><th>Магазин</th><th>Цена</th><th>Отзывы</th></tr></thead>
-                <tbody>${competitors.length > 0 ? competitors.slice(0,10).map(c => `<tr>
-                    <td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a href="${c.url}" target="_blank">${c.name}</a></td>
-                    <td>${c.seller || 'Kaspi Магазин'}</td>
-                    <td style="color:#f59e0b;font-weight:700">${fmt(c.price)}</td>
-                    <td>${fmt(c.reviews)}</td>
-                </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;padding:20px">Конкуренты не найдены</td></tr>'}</tbody>
+                <tbody>${(competitors || []).map(c => `<tr><td>${c.name}</td><td>${c.seller}</td><td style="color:#f59e0b">${fmt(c.price)}</td><td>${c.reviews}</td></tr>`).join('')}</tbody>
             </table>
         </div>`;
     } else {
-        const optPrice = ai.optimalPrice || ai.optimal_price || 0;
-        const marginPct = ai.marginPct || ai.margin_pct || 0;
-        const p1 = Math.round(optPrice * marginPct / 100);
-        tabContent = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="card"><div style="color:#f97316;font-weight:800;font-size:12px;margin-bottom:8px">Прибыль/шт</div><div style="font-size:24px;font-weight:900;color:#10b981">${fmt(p1)} тг</div></div>
-            <div class="card"><div style="color:#6366f1;font-weight:800;font-size:12px;margin-bottom:8px">Окупаемость</div><div style="font-size:24px;font-weight:900;color:#f97316">${ai.breakEvenUnits || ai.break_even_units || 0} шт</div></div>
+        tabContent = `<div class="card" style="text-align:center">
+            <div style="color:#f97316;font-weight:800;font-size:12px;margin-bottom:8px">Оптимальная цена</div>
+            <div style="font-size:24px;font-weight:900;color:#10b981">${fmt(ai.optimalPrice)} тг</div>
+            <div style="color:#4b5563;font-size:11px;margin-top:4px">Маржа: ${ai.marginPct}% | Прибыль: ${fmt(ai.monthlyProfit)} тг</div>
         </div>`;
     }
 
-    const tabs = ['niche', 'prices', 'rivals', 'margin'];
-    const labels = {'niche':'Ниша', 'prices':'Цены', 'rivals':'Конкуренты', 'margin':'Маржа'};
+    const tabs = ['niche', 'rivals', 'margin'];
+    const labels = {'niche':'Ниша', 'rivals':'Конкуренты', 'margin':'Маржа'};
 
     document.getElementById('result').innerHTML = `
         <div style="animation:fadeUp .4s ease">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:11px">
                 <span style="color:${fromCache?'#6366f1':'#10b981'};font-weight:700">${fromCache?'⚡ Архив':'🟢 Прямой эфир'}</span>
-                <span style="color:#4b5563">| Найдено: ${stats.totalFound || 0} | Запрос: ${query}</span>
+                <span style="color:#4b5563">| Найдено: ${stats.totalFound || 0}</span>
             </div>
-
-            <div class="card" style="border-left:4px solid ${vc};margin-bottom:16px">
+            <div class="card" style="border-left:4px solid ${verdictColor};margin-bottom:16px">
                 <div style="font-size:10px;color:#4b5563;font-weight:800;margin-bottom:4px">ВЕРДИКТ AI</div>
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-                    <span style="background:${vc};color:#000;font-weight:900;padding:4px 12px;border-radius:20px">${verdict}</span>
-                    <span style="font-size:12px;color:#d1d5db">${verdictText}</span>
-                </div>
-                <div style="display:flex;justify-content:space-around;padding-top:15px;border-top:1px solid #1e2a3a">
-                    ${gaugeHTML(nicheScore,'Ниша','#6366f1')}
-                    ${gaugeHTML(demandScore,'Спрос','#10b981')}
-                    ${gaugeHTML(marginScore,'Маржа','#f97316')}
-                </div>
-            </div>
-
-            <div style="display:flex;margin-bottom:14px">
-                ${tabs.map(t => `<button class="tab ${t===tabId?'on':''}" onclick="renderResult('${t}')">${labels[t]}</button>`).join('')}
-            </div>
-            <div id="tabcontent">${tabContent}</div>
-        </div>`;
-}
-
-    const tabs = ['niche', 'prices', 'rivals', 'margin'];
-    const labels = {'niche':'Ниша', 'prices':'Цены', 'rivals':'Конкуренты', 'margin':'Маржа'};
-
-    document.getElementById('result').innerHTML = `
-        <div style="animation:fadeUp .4s ease">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:11px">
-                <span style="color:${fromCache?'#6366f1':'#10b981'};font-weight:700">${fromCache?'⚡ Архив':'🟢 Прямой эфир'}</span>
-                <span style="color:#4b5563">| Найдено: ${stats.totalFound} | Запрос: ${query}</span>
-            </div>
-
-            <div class="card" style="border-left:4px solid ${vc};margin-bottom:16px">
-                <div style="font-size:10px;color:#4b5563;font-weight:800;margin-bottom:4px">ВЕРДИКТ AI</div>
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-                    <span style="background:${vc};color:#000;font-weight:900;padding:4px 12px;border-radius:20px">${ai.verdict}</span>
+                    <span style="background:${verdictColor};color:#000;font-weight:900;padding:4px 12px;border-radius:20px">${ai.verdict}</span>
                     <span style="font-size:12px;color:#d1d5db">${ai.verdictText}</span>
                 </div>
                 <div style="display:flex;justify-content:space-around;padding-top:15px;border-top:1px solid #1e2a3a">
@@ -263,8 +204,7 @@ function renderResult(tabId) {
                     ${gaugeHTML(ai.marginScore,'Маржа','#f97316')}
                 </div>
             </div>
-
-            <div style="display:flex;margin-bottom:14px">
+            <div style="display:flex;gap:6px;margin-bottom:14px">
                 ${tabs.map(t => `<button class="tab ${t===tabId?'on':''}" onclick="renderResult('${t}')">${labels[t]}</button>`).join('')}
             </div>
             <div id="tabcontent">${tabContent}</div>
