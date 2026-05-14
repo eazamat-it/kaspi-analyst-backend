@@ -144,16 +144,19 @@ async function run() {
     }
 }
 function renderResult(tabId) {
-    // 1. Извлекаем данные с защитой от пустоты
-    const ai = D.ai || {};
-    const stats = D.stats || { priceRanges: {}, totalFound: 0 };
-    const competitors = D.competitors || [];
+    // 1. Извлекаем ВСЕ данные из объекта D, включая query и fromCache
+    const { ai, stats, competitors, query, fromCache } = D || {};
+    
+    // Защита: создаем пустые объекты, если бэкенд прислал пустоту
+    const AI = ai || {};
+    const STATS = stats || { priceRanges: {}, totalFound: 0, avgPrice: 0, minPrice: 0, maxPrice: 0, weakSellers: 0, strongSellers: 0, avgReviews: 0 };
+    const COMPS = competitors || [];
     
     // Форматирование чисел
     const fmt = (v) => v ? v.toLocaleString('ru-RU') : '0';
     
     // Цветовая схема вердикта
-    const verdict = ai.verdict || 'АНАЛИЗ...';
+    const verdict = AI.verdict || 'АНАЛИЗ...';
     const vc = verdict === 'ВОЙТИ' ? '#10b981' : verdict === 'ОСТОРОЖНО' ? '#f59e0b' : '#ef4444';
     
     const h = document.getElementById('res');
@@ -178,156 +181,157 @@ function renderResult(tabId) {
         <div class="card" style="border-left:4px solid ${vc};margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
                 <div>
-                    <div style="font-size:10px;color:#4b5563;font-weight:800;letter-spacing:1px;margin-bottom:4px">ВЕРДИКТ СИСТЕМЫ</div>
+                    <div style="font-size:10px;color:#4b5563;font-weight:800;letter-spacing:1px;margin-bottom:4px">
+                        ВЕРДИКТ СИСТЕМЫ ${fromCache ? '<span style="color:#6366f1">(ИЗ АРХИВА)</span>' : ''}
+                    </div>
                     <div style="font-size:24px;font-weight:900;color:${vc}">${verdict}</div>
                 </div>
                 <div style="text-align:right">
                     <div style="font-size:10px;color:#4b5563;font-weight:800;margin-bottom:4px">ПОИСКОВЫЙ ЗАПРОС</div>
-                    <div style="color:#d1d5db;font-weight:700">${D.query || ''}</div>
+                    <div style="color:#d1d5db;font-weight:700">${query || '—'}</div>
                 </div>
             </div>
-            <p style="color:#9ca3af;font-size:13px;margin-top:10px;line-height:1.5">${ai.verdictText || 'Нейросеть готовит анализ данных...'}</p>
+            <p style="color:#9ca3af;font-size:13px;margin-top:10px;line-height:1.5">${AI.verdictText || 'Нейросеть готовит анализ данных...'}</p>
             <div style="display:flex;justify-content:space-between;margin-top:20px;padding-top:15px;border-top:1px solid #1e2a3a">
-                ${gaugeHTML(ai.nicheScore, 'Ниша', '#6366f1')}
-                ${gaugeHTML(ai.demandScore, 'Спрос', '#10b981')}
-                ${gaugeHTML(ai.competitionScore, 'Конкуренция', '#f59e0b')}
-                ${gaugeHTML(ai.marginScore, 'Маржа', '#f97316')}
+                ${gaugeHTML(AI.nicheScore, 'Ниша', '#6366f1')}
+                ${gaugeHTML(AI.demandScore, 'Спрос', '#10b981')}
+                ${gaugeHTML(AI.competitionScore, 'Конкуренция', '#f59e0b')}
+                ${gaugeHTML(AI.marginScore, 'Маржа', '#f97316')}
             </div>
         </div>
         <div id="tab-content"></div>
     `;
 
     const tc = document.getElementById('tab-content');
-    let content = '';
+    let tabContent = '';
 
-    if (tabId === 'niche') {
-        content = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="card"><div style="color:#10b981;font-weight:800;font-size:13px;margin-bottom:12px">🏔️ Свободные сегменты</div>
-                ${(ai.freeSegments || []).map((s, i) => `<div style="display:flex;gap:8px;margin-bottom:8px;align-items:flex-start">
-                    <div style="min-width:20px;height:20px;border-radius:5px;background:#10b98120;display:flex;align-items:center;justify-content:center;font-size:10px;color:#10b981;font-weight:800">${i + 1}</div>
-                    <span style="color:#d1d5db;font-size:12px;line-height:1.5">${s}</span></div>`).join('')}</div>
-            <div class="card"><div style="color:#6366f1;font-weight:800;font-size:13px;margin-bottom:12px">✅ Возможности</div>
-                ${(ai.topOpportunities || []).map(o => `<div style="display:flex;gap:8px;margin-bottom:8px"><span style="color:#6366f1;font-weight:800">→</span><span style="color:#d1d5db;font-size:12px;line-height:1.5">${o}</span></div>`).join('')}</div>
-            <div class="card"><div style="color:#ef4444;font-weight:800;font-size:13px;margin-bottom:12px">⚠️ Риски</div>
-                ${(ai.topRisks || []).map(r => `<div style="display:flex;gap:8px;margin-bottom:8px"><span style="color:#ef4444">!</span><span style="color:#d1d5db;font-size:12px;line-height:1.5">${r}</span></div>`).join('')}</div>
-            <div class="card"><div style="color:#f59e0b;font-weight:800;font-size:13px;margin-bottom:12px">🔑 Ключевые слова</div>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-                    ${(ai.keywords || []).map(k => `<span class="pill" style="background:#f59e0b18;border:1px solid #f59e0b40;color:#f59e0b">${k}</span>`).join('')}
-                </div>
-                <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:6px;text-transform:uppercase">Сезонность</div>
-                <span class="pill" style="background:#6366f118;border:1px solid #6366f140;color:#6366f1">${ai.seasonality || 'Не определена'}</span>
+    if(tabId==='niche'){
+        tabContent = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="card"><div style="color:#10b981;font-weight:800;font-size:13px;margin-bottom:12px">🏔️ Свободные сегменты</div>
+            ${(AI.freeSegments || []).map((s,i)=>`<div style="display:flex;gap:8px;margin-bottom:8px;align-items:flex-start">
+              <div style="min-width:20px;height:20px;border-radius:5px;background:#10b98120;display:flex;align-items:center;justify-content:center;font-size:10px;color:#10b981;font-weight:800">${i+1}</div>
+              <span style="color:#d1d5db;font-size:12px;line-height:1.5">${s}</span></div>`).join('')}</div>
+          <div class="card"><div style="color:#6366f1;font-weight:800;font-size:13px;margin-bottom:12px">✅ Возможности</div>
+            ${(AI.topOpportunities || []).map(o=>`<div style="display:flex;gap:8px;margin-bottom:8px"><span style="color:#6366f1;font-weight:800">→</span><span style="color:#d1d5db;font-size:12px;line-height:1.5">${o}</span></div>`).join('')}</div>
+          <div class="card"><div style="color:#ef4444;font-weight:800;font-size:13px;margin-bottom:12px">⚠️ Риски</div>
+            ${(AI.topRisks || []).map(r=>`<div style="display:flex;gap:8px;margin-bottom:8px"><span style="color:#ef4444">!</span><span style="color:#d1d5db;font-size:12px;line-height:1.5">${r}</span></div>`).join('')}</div>
+          <div class="card"><div style="color:#f59e0b;font-weight:800;font-size:13px;margin-bottom:12px">🔑 Ключевые слова</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+              ${(AI.keywords || []).map(k=>`<span class="pill" style="background:#f59e0b18;border:1px solid #f59e0b40;color:#f59e0b">${k}</span>`).join('')}
             </div>
+            <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:6px">СЕЗОННОСТЬ</div>
+            <span class="pill" style="background:#6366f118;border:1px solid #6366f140;color:#6366f1">${AI.seasonality || 'Не определена'}</span>
+          </div>
         </div>`;
-    } else if (tabId === 'prices') {
-        content = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="card" style="grid-column:1/-1">
-                <div style="color:#6366f1;font-weight:800;font-size:13px;margin-bottom:12px">📈 Динамика и тренд цен</div>
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
-                    <div>
-                        <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:6px">ТРЕНД (AI АНАЛИЗ)</div>
-                        <span class="pill" style="background:${ai.priceTrend === 'РАСТЁТ' ? '#10b98118' : '#ef444418'};border:1px solid ${ai.priceTrend === 'РАСТЁТ' ? '#10b98140' : '#ef444440'};color:${ai.priceTrend === 'РАСТЁТ' ? '#10b981' : '#ef4444'};font-size:14px;padding:6px 16px">
-                            ${ai.priceTrend === 'РАСТЁТ' ? '↑' : '↓'} ${ai.priceTrend || 'СТАБИЛЬНО'}
-                        </span>
-                        <div style="color:#6b7280;font-size:12px;margin-top:8px;max-width:300px;line-height:1.5">${ai.priceTrendText || ''}</div>
-                    </div>
-                    <div style="text-align:right">
-                        <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:4px">СРЕДНЯЯ ЦЕНА НА KASPI</div>
-                        <div style="font-size:32px;font-weight:900;color:#10b981;font-family:monospace">${fmt(stats.avgPrice)} тг</div>
-                        <div style="color:#6b7280;font-size:11px">диапазон: ${fmt(stats.minPrice)} – ${fmt(stats.maxPrice)} тг</div>
-                    </div>
+    } else if(tabId==='prices'){
+        tabContent = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="card" style="grid-column:1/-1">
+            <div style="color:#6366f1;font-weight:800;font-size:13px;margin-bottom:12px">📈 Динамика и тренд цен</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+              <div>
+                <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:6px">ТРЕНД (AI АНАЛИЗ)</div>
+                <span class="pill" style="background:${AI.priceTrend==='РАСТЁТ'?'#10b98118':'#ef444418'};border:1px solid ${AI.priceTrend==='РАСТЁТ'?'#10b98140':'#ef444440'};color:${AI.priceTrend==='РАСТЁТ'?'#10b981':'#ef4444'};font-size:14px;padding:6px 16px">
+                  ${AI.priceTrend==='РАСТЁТ'?'↑':'↓'} ${AI.priceTrend || 'СТАБИЛЬНО'}
+                </span>
+                <div style="color:#6b7280;font-size:12px;margin-top:8px;max-width:300px;line-height:1.5">${AI.priceTrendText || ''}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:4px">СРЕДНЯЯ ЦЕНА НА KASPI</div>
+                <div style="font-size:32px;font-weight:900;color:#10b981;font-family:monospace">${fmt(STATS.avgPrice)} тг</div>
+                <div style="color:#6b7280;font-size:11px">диапазон: ${fmt(STATS.minPrice)} – ${fmt(STATS.maxPrice)} тг</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="color:#f97316;font-weight:800;font-size:13px;margin-bottom:12px">💲 Реальный разброс цен</div>
+            ${Object.entries(STATS.priceRanges || {}).map(([l,cnt])=>{
+              const pct=Math.round((cnt/Math.max(STATS.totalFound,1))*100);
+              return `<div style="margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                  <span style="font-size:11px;color:#9ca3af">${l} тг</span>
+                  <span style="font-size:11px;color:#6b7280">${cnt} прод. (${pct}%)</span>
                 </div>
-            </div>
-            <div class="card">
-                <div style="color:#f97316;font-weight:800;font-size:13px;margin-bottom:12px">💲 Реальный разброс цен</div>
-                ${Object.entries(stats.priceRanges || {}).map(([l, cnt]) => {
-                    const pct = Math.round((cnt / Math.max(stats.totalFound, 1)) * 100);
-                    return `<div style="margin-bottom:8px">
-                        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-                            <span style="font-size:11px;color:#9ca3af">${l} тг</span>
-                            <span style="font-size:11px;color:#6b7280">${cnt} прод. (${pct}%)</span>
-                        </div>
-                        <div style="height:5px;background:#1e2a3a;border-radius:4px">
-                            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:4px"></div>
-                        </div></div>`;
-                }).join('')}
-            </div>
-            <div class="card">
-                <div style="color:#10b981;font-weight:800;font-size:13px;margin-bottom:12px">🎯 Рекомендация по цене</div>
-                <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:4px">ОПТИМАЛЬНАЯ ЦЕНА ВХОДА</div>
-                <div style="font-size:30px;font-weight:900;color:#10b981;font-family:monospace;margin-bottom:12px">${fmt(ai.optimalPrice)} тг</div>
-                <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:6px">ТАКТИКА ЦЕНООБРАЗОВАНИЯ</div>
-                <p style="color:#d1d5db;font-size:12px;line-height:1.6;margin:0">${ai.pricingTip || ''}</p>
-            </div>
+                <div style="height:5px;background:#1e2a3a;border-radius:4px">
+                  <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:4px"></div>
+                </div></div>`;
+            }).join('')}
+          </div>
+          <div class="card">
+            <div style="color:#10b981;font-weight:800;font-size:13px;margin-bottom:12px">🎯 Рекомендация по цене</div>
+            <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:4px">ОПТИМАЛЬНАЯ ЦЕНА ВХОДА</div>
+            <div style="font-size:30px;font-weight:900;color:#10b981;font-family:monospace;margin-bottom:12px">${fmt(AI.optimalPrice || 0)} тг</div>
+            <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:6px">ТАКТИКА ЦЕНООБРАЗОВАНИЯ</div>
+            <p style="color:#d1d5db;font-size:12px;line-height:1.6;margin:0">${AI.pricingTip || ''}</p>
+          </div>
         </div>`;
-    } else if (tabId === 'rivals') {
-        content = `<div style="display:flex;flex-direction:column;gap:12px">
-            <div style="color:#4b5563;font-size:11px">✅ Реальные продавцы с Kaspi.kz</div>
-            <div class="card" style="padding:0;overflow:hidden">
-                <div style="overflow-x:auto">
-                    <table>
-                        <thead><tr>${['#', 'Товар', 'Магазин', 'Цена', 'Рейтинг', 'Отзывы', 'Наличие'].map(h => `<th>${h}</th>`).join('')}</tr></thead>
-                        <tbody>${competitors.map((c, i) => `<tr>
-                            <td style="color:#374151">${i + 1}</td>
-                            <td style="max-width:200px"><a href="${c.url}" target="_blank" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${c.name}</a></td>
-                            <td><span style="background:#1e2a3a;border-radius:5px;padding:2px 7px;font-size:10px;color:#6b7280">${c.seller}</span></td>
-                            <td style="color:#f59e0b;font-weight:700;font-family:monospace;white-space:nowrap">${fmt(c.price)} тг</td>
-                            <td style="color:#fbbf24">★ ${c.rating}</td>
-                            <td style="color:#9ca3af">${fmt(c.reviews)}</td>
-                            <td style="color:${c.inStock ? '#10b981' : '#ef4444'};font-weight:700">${c.inStock ? 'Есть' : 'Нет'}</td>
-                        </tr>`).join('')}</tbody>
-                    </table>
-                </div>
+    } else if(tabId==='rivals'){
+        tabContent = `<div style="display:flex;flex-direction:column;gap:12px">
+          <div style="color:#4b5563;font-size:11px">✅ Реальные продавцы с Kaspi.kz — кликните на товар чтобы открыть</div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div style="overflow-x:auto">
+              <table>
+                <thead><tr>${['#','Товар','Магазин','Цена','Рейтинг','Отзывы','Наличие'].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+                <tbody>${COMPS.map((c,i)=>`<tr>
+                  <td style="color:#374151">${i+1}</td>
+                  <td style="max-width:200px"><a href="${c.url}" target="_blank" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${c.name}</a></td>
+                  <td><span style="background:#1e2a3a;border-radius:5px;padding:2px 7px;font-size:10px;color:#6b7280">${c.seller}</span></td>
+                  <td style="color:#f59e0b;font-weight:700;font-family:monospace;white-space:nowrap">${fmt(c.price)} тг</td>
+                  <td style="color:#fbbf24">★ ${c.rating}</td>
+                  <td style="color:#9ca3af">${fmt(c.reviews)}</td>
+                  <td style="color:${c.inStock?'#10b981':'#ef4444'};font-weight:700">${c.inStock?'Есть':'Нет'}</td>
+                </tr>`).join('')}</tbody>
+              </table>
             </div>
-            <div class="card">
-                <div style="color:#f59e0b;font-weight:800;font-size:13px;margin-bottom:12px">⭐ Стратегия по отзывам</div>
-                <div style="display:flex;gap:24px;margin-bottom:12px">
-                    <div style="text-align:center"><div style="font-size:9px;color:#4b5563;font-weight:700">СЛАБЫХ</div><div style="font-size:28px;font-weight:900;color:#10b981">${stats.weakSellers || 0}</div></div>
-                    <div style="text-align:center"><div style="font-size:9px;color:#4b5563;font-weight:700">СИЛЬНЫХ</div><div style="font-size:28px;font-weight:900;color:#ef4444">${stats.strongSellers || 0}</div></div>
-                    <div style="text-align:center"><div style="font-size:9px;color:#4b5563;font-weight:700">СРЕДНЕЕ</div><div style="font-size:28px;font-weight:900;color:#f59e0b">${stats.avgReviews || 0}</div></div>
-                </div>
-                <p style="color:#d1d5db;font-size:12px;line-height:1.6;margin:0">${ai.reviewTip || ''}</p>
+          </div>
+          <div class="card">
+            <div style="color:#f59e0b;font-weight:800;font-size:13px;margin-bottom:12px">⭐ Стратегия по отзывам</div>
+            <div style="display:flex;gap:24px;margin-bottom:12px">
+              <div style="text-align:center"><div style="font-size:9px;color:#4b5563;font-weight:700">СЛАБЫХ</div><div style="font-size:28px;font-weight:900;color:#10b981">${STATS.weakSellers || 0}</div></div>
+              <div style="text-align:center"><div style="font-size:9px;color:#4b5563;font-weight:700">СИЛЬНЫХ</div><div style="font-size:28px;font-weight:900;color:#ef4444">${STATS.strongSellers || 0}</div></div>
+              <div style="text-align:center"><div style="font-size:9px;color:#4b5563;font-weight:700">СРЕДНЕЕ</div><div style="font-size:28px;font-weight:900;color:#f59e0b">${STATS.avgReviews || 0}</div></div>
             </div>
+            <p style="color:#d1d5db;font-size:12px;line-height:1.6;margin:0">${AI.reviewTip || ''}</p>
+          </div>
         </div>`;
     } else {
-        // Вкладка Маржа
-        const optPrice = ai.optimalPrice || 0;
-        const mPct = ai.marginPct || 0;
-        const p1 = Math.round(optPrice * mPct / 100);
-        content = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="card">
-                <div style="color:#f97316;font-weight:800;font-size:13px;margin-bottom:12px">💰 Финансовая модель</div>
-                ${[['Цена продажи', `${fmt(optPrice)} тг`, '#e2e8f0'],
-                   ['Комиссия Kaspi (~15%)', `−${fmt(Math.round(optPrice * .15))} тг`, '#ef4444'],
-                   ['Себестоимость', `−${fmt(Math.round(optPrice * (1 - mPct / 100) * .85))} тг`, '#ef4444'],
-                   ['Чистая прибыль/шт', `${fmt(p1)} тг`, '#10b981'],
-                   ['Маржинальность', `${mPct}%`, '#f59e0b']
-                  ].map(([l, v, c]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1e2a3a">
-                    <span style="color:#6b7280;font-size:12px">${l}</span>
-                    <span style="color:${c};font-weight:800;font-family:monospace">${v}</span></div>`).join('')}
+        const optPrice = AI.optimalPrice || 0;
+        const marginPct = AI.marginPct || 0;
+        const p1 = Math.round(optPrice * marginPct / 100);
+        tabContent = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="card">
+            <div style="color:#f97316;font-weight:800;font-size:13px;margin-bottom:12px">💰 Финансовая модель</div>
+            ${[['Цена продажи',`${fmt(optPrice)} тг`,'#e2e8f0'],
+               ['Комиссия Kaspi (~15%)',`−${fmt(Math.round(optPrice*.15))} тг`,'#ef4444'],
+               ['Себестоимость',`−${fmt(Math.round(optPrice*(1-marginPct/100)*.85))} тг`,'#ef4444'],
+               ['Чистая прибыль/шт',`${fmt(p1)} тг`,'#10b981'],
+               ['Маржинальность',`${marginPct}%`,'#f59e0b']
+              ].map(([l,v,c])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1e2a3a">
+                <span style="color:#6b7280;font-size:12px">${l}</span>
+                <span style="color:${c};font-weight:800;font-family:monospace">${v}</span></div>`).join('')}
+          </div>
+          <div class="card">
+            <div style="color:#6366f1;font-weight:800;font-size:13px;margin-bottom:12px">📊 Точка окупаемости</div>
+            <div style="text-align:center;padding:10px 0 16px">
+              <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:4px">НУЖНО ПРОДАТЬ</div>
+              <div style="font-size:52px;font-weight:900;color:#6366f1;font-family:monospace;line-height:1">${AI.breakEvenUnits || 0}</div>
+              <div style="color:#6b7280;font-size:12px;margin-top:4px">единиц</div>
             </div>
-            <div class="card">
-                <div style="color:#6366f1;font-weight:800;font-size:13px;margin-bottom:12px">📊 Точка окупаемости</div>
-                <div style="text-align:center;padding:10px 0 16px">
-                    <div style="font-size:10px;color:#4b5563;font-weight:700;margin-bottom:4px">НУЖНО ПРОДАТЬ</div>
-                    <div style="font-size:52px;font-weight:900;color:#6366f1;font-family:monospace;line-height:1">${ai.breakEvenUnits || 0}</div>
-                    <div style="color:#6b7280;font-size:12px;margin-top:4px">единиц</div>
-                </div>
-                <div style="background:#0f172a;border-radius:8px;padding:12px">
-                    ${[[10, '#9ca3af'], [50, '#f59e0b'], [100, '#10b981']].map(([q, c]) => `
-                        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-                            <span style="color:#4b5563;font-size:11px">При ${q} шт/мес</span>
-                            <span style="color:${c};font-size:11px;font-family:monospace">${fmt(p1 * q)} тг</span>
-                        </div>`).join('')}
-                </div>
+            <div style="background:#0f172a;border-radius:8px;padding:12px">
+              ${[[10,'#9ca3af'],[50,'#f59e0b'],[100,'#10b981']].map(([q,c])=>`
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                  <span style="color:#4b5563;font-size:11px">При ${q} шт/мес</span>
+                  <span style="color:${c};font-size:11px;font-family:monospace">${fmt(p1*q)} тг</span>
+                </div>`).join('')}
             </div>
-            <div class="card" style="grid-column:1/-1">
-                <div style="color:#f97316;font-weight:800;font-size:13px;margin-bottom:10px">🚀 Стратегия входа в нишу</div>
-                <p style="color:#d1d5db;font-size:13px;line-height:1.7;margin:0">${ai.entryStrategy || ''}</p>
-            </div>
+          </div>
+          <div class="card" style="grid-column:1/-1">
+            <div style="color:#f97316;font-weight:800;font-size:13px;margin-bottom:10px">🚀 Стратегия входа в нишу</div>
+            <p style="color:#d1d5db;font-size:13px;line-height:1.7;margin:0">${AI.entryStrategy || ''}</p>
+          </div>
         </div>`;
     }
-    
-    tc.innerHTML = content;
+
+    tc.innerHTML = tabContent;
     show('res');
 }
   document.getElementById('result').innerHTML = `
