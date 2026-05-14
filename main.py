@@ -145,3 +145,12 @@ async def analyze(body: dict):
         "ai": ai_analysis,
         "fromCache": False
     })
+
+@app.get("/test")
+async def test():
+    kaspi_result = await fetch_kaspi("термос", 0)
+    return {
+        "anthropic_key_set": bool(ANTHROPIC_KEY),
+        "kaspi_data_count": len(kaspi_result.get("data", {}).get("cards", [])),
+        "kaspi_raw_keys": list(kaspi_result.keys())
+    }
