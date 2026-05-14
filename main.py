@@ -11,14 +11,20 @@ import os
 app = FastAPI(title="KaspiAnalyst API", version="3.5.0")
 
 # Читаем ключ Anthropic из переменных окружения Render
-# Оставляем именно так, ключ подтянется из настроек (Environment) автоматически
 ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+# ОСТАВЛЯЕМ ТОЛЬКО ЭТОТ ОДИН БЛОК CORS
+origins = [
+    "https://eazamat-it.github.io",  # Ваш фронтенд на GitHub
+    "http://localhost",               # Для локальной разработки
+    "http://localhost:3000",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
