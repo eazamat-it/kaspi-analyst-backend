@@ -27,13 +27,14 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 .score-bar{height:6px;border-radius:3px;background:#1e2a3a;margin-top:4px}
 .score-fill{height:100%;border-radius:3px;transition:width .6s ease}
 .modal-overlay{position:fixed;inset:0;background:#000000aa;display:flex;align-items:center;justify-content:center;z-index:1000}
-.modal{background:#111827;border:1px solid #1e2a3a;border-radius:16px;padding:32px;width:100%;max-width:400px;margin:16px}
+.modal{background:#111827;border:1px solid #1e2a3a;border-radius:16px;padding:32px;width:100%;max-width:400px;margin:16px;max-height:90vh;overflow-y:auto}
 .modal h2{font-size:20px;font-weight:900;margin-bottom:6px}
 .modal p{color:#6b7280;font-size:13px;margin-bottom:24px}
-.auth-input{background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 16px;height:44px;outline:none;width:100%;margin-bottom:12px}
+.auth-input{background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 16px;height:44px;outline:none;width:100%;margin-bottom:12px;font-family:'Segoe UI',sans-serif}
 .auth-input:focus{border-color:#f97316}
 .auth-input::placeholder{color:#4b5563}
 .btn-primary{width:100%;height:44px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;margin-bottom:12px}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .btn-secondary{width:100%;height:44px;background:transparent;color:#9ca3af;border-radius:10px;font-size:13px;font-weight:600;border:1px solid #1e2a3a;cursor:pointer}
 .btn-secondary:hover{border-color:#f97316;color:#f97316}
 .auth-tabs{display:flex;margin-bottom:24px;border-bottom:1px solid #1e2a3a}
@@ -50,6 +51,20 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 .forgot-link{text-align:right;margin-bottom:12px;margin-top:-4px}
 .forgot-link span{color:#6b7280;font-size:11px;cursor:pointer}
 .forgot-link span:hover{color:#f97316}
+
+/* Password strength */
+.pass-wrap{position:relative;margin-bottom:4px}
+.pass-wrap .auth-input{margin-bottom:0}
+.pass-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#6b7280;font-size:16px;user-select:none}
+.pass-toggle:hover{color:#f97316}
+.strength-bars{display:flex;gap:4px;margin:8px 0 4px}
+.strength-bar{height:4px;border-radius:2px;flex:1;background:#1e2a3a;transition:background .3s}
+.strength-label{font-size:11px;margin-bottom:8px}
+.pass-rules{margin-bottom:12px}
+.pass-rule{font-size:11px;padding:2px 0;display:flex;align-items:center;gap:6px;color:#4b5563;transition:color .2s}
+.pass-rule.ok{color:#10b981}
+.pass-rule::before{content:'○';font-size:10px}
+.pass-rule.ok::before{content:'✓'}
 </style>
 </head>
 <body>
@@ -100,7 +115,6 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
   <div style="font-size:15px;font-weight:700;color:#374151">Введите товар для анализа</div>
   <div style="font-size:12px;margin-top:6px;color:#1e2a3a">AI проанализирует нишу казахстанского рынка</div>
 </div>
-
 </div>
 
 <!-- Auth Modal -->
@@ -115,7 +129,30 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
       </div>
       <div id="authMsg"></div>
       <input class="auth-input" id="authEmail" type="email" placeholder="Email адрес"/>
-      <input class="auth-input" id="authPass" type="password" placeholder="Пароль" onkeydown="if(event.key==='Enter')doAuth()"/>
+
+      <div class="pass-wrap">
+        <input class="auth-input" id="authPass" type="password" placeholder="Пароль" oninput="onPassInput()" onkeydown="if(event.key==='Enter')doAuth()"/>
+        <span class="pass-toggle" onclick="togglePass('authPass',this)">👁</span>
+      </div>
+
+      <!-- Индикатор силы пароля (только при регистрации) -->
+      <div id="strengthWrap" style="display:none">
+        <div class="strength-bars">
+          <div class="strength-bar" id="sb1"></div>
+          <div class="strength-bar" id="sb2"></div>
+          <div class="strength-bar" id="sb3"></div>
+          <div class="strength-bar" id="sb4"></div>
+        </div>
+        <div class="strength-label" id="strengthLabel"></div>
+        <div class="pass-rules">
+          <div class="pass-rule" id="r-len">Минимум 8 символов</div>
+          <div class="pass-rule" id="r-upper">Заглавная буква (A-Z)</div>
+          <div class="pass-rule" id="r-lower">Строчная буква (a-z)</div>
+          <div class="pass-rule" id="r-num">Цифра (0-9)</div>
+          <div class="pass-rule" id="r-spec">Спецсимвол (!@#$%^&*)</div>
+        </div>
+      </div>
+
       <div id="forgotLink" class="forgot-link">
         <span onclick="showForgot()">Забыли пароль?</span>
       </div>
@@ -144,9 +181,7 @@ const API = 'https://kaspi-analyst-backend.onrender.com';
 const FREE_LIMIT = 3;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let D = null;
-let currentUser = null;
-let authMode = 'login';
+let D = null, currentUser = null, authMode = 'login';
 
 fetch(`${API}/`).catch(()=>{});
 
@@ -154,9 +189,7 @@ async function init() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) currentUser = session.user;
     renderUserBar();
-
-    // Слушаем изменения сессии
-    sb.auth.onAuthStateChange((_event, session) => {
+    sb.auth.onAuthStateChange((_e, session) => {
         currentUser = session?.user || null;
         renderUserBar();
     });
@@ -165,287 +198,263 @@ async function init() {
 function renderUserBar() {
     const bar = document.getElementById('userBar');
     if (currentUser) {
-        const used = getUsedToday();
-        const left = Math.max(0, FREE_LIMIT - used);
-        bar.innerHTML = `
-            <div class="user-bar">
-                <span class="email">👤 ${currentUser.email}</span>
-                <span class="limit">🔍 ${left}/${FREE_LIMIT} запросов</span>
-                <button class="btn-logout" onclick="logout()">Выйти</button>
-            </div>`;
+        const left = Math.max(0, FREE_LIMIT - getUsedToday());
+        bar.innerHTML = `<div class="user-bar">
+            <span class="email">👤 ${currentUser.email}</span>
+            <span class="limit">🔍 ${left}/${FREE_LIMIT}</span>
+            <button class="btn-logout" onclick="logout()">Выйти</button>
+        </div>`;
     } else {
         bar.innerHTML = `<button class="btn-login" onclick="openModal()">Войти / Регистрация</button>`;
     }
 }
 
 function getUsedToday() {
-    const key = `ma_used_${new Date().toDateString()}_${currentUser?.id || 'guest'}`;
-    return parseInt(localStorage.getItem(key) || '0');
+    const key = `ma_used_${new Date().toDateString()}_${currentUser?.id||'guest'}`;
+    return parseInt(localStorage.getItem(key)||'0');
 }
-
 function incrementUsed() {
-    const key = `ma_used_${new Date().toDateString()}_${currentUser?.id || 'guest'}`;
-    localStorage.setItem(key, getUsedToday() + 1);
+    const key = `ma_used_${new Date().toDateString()}_${currentUser?.id||'guest'}`;
+    localStorage.setItem(key, getUsedToday()+1);
 }
 
 function show(id) {
     ['loading','err','result','empty'].forEach(x => {
         const el = document.getElementById(x);
-        if (el) el.style.display = (x===id?'block':'none');
+        if(el) el.style.display = x===id?'block':'none';
     });
 }
-
 function fmt(n) { return n ? Number(n).toLocaleString('ru-KZ') : '0'; }
-function setQ(v) { document.getElementById('q').value = v; run(); }
+function setQ(v) { document.getElementById('q').value=v; run(); }
 
 async function run() {
     const q = document.getElementById('q').value.trim();
     if (!q) return;
-
-    if (!currentUser) {
-        const used = getUsedToday();
-        if (used >= FREE_LIMIT) {
-            openModal();
-            showMsg('Бесплатный лимит исчерпан. Войдите для продолжения.', 'error');
-            return;
-        }
+    if (!currentUser && getUsedToday() >= FREE_LIMIT) {
+        openModal();
+        showMsg('Бесплатный лимит исчерпан. Войдите для продолжения.','error');
+        return;
     }
-
     show('loading');
     try {
         const r = await fetch(`${API}/analyze`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ query: q })
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({query:q})
         });
         if (!r.ok) throw new Error(`Ошибка сервера ${r.status}`);
         D = await r.json();
-        incrementUsed();
-        renderUserBar();
-        renderResult('niche');
-        show('result');
-    } catch (e) {
-        document.getElementById('errmsg').textContent = e.message || 'Неизвестная ошибка';
+        incrementUsed(); renderUserBar();
+        renderResult('niche'); show('result');
+    } catch(e) {
+        document.getElementById('errmsg').textContent = e.message||'Неизвестная ошибка';
         show('err');
     }
 }
 
-// Auth
-function openModal() {
-    document.getElementById('authModal').style.display = 'flex';
-    showLogin();
+// Password strength
+function checkPass(p) {
+    return {
+        len:    p.length >= 8,
+        upper:  /[A-Z]/.test(p),
+        lower:  /[a-z]/.test(p),
+        num:    /[0-9]/.test(p),
+        spec:   /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p)
+    };
 }
 
-function closeModal() {
-    document.getElementById('authModal').style.display = 'none';
+function onPassInput() {
+    if (authMode !== 'register') return;
+    const p = document.getElementById('authPass').value;
+    const c = checkPass(p);
+    const score = Object.values(c).filter(Boolean).length;
+
+    ['r-len','r-upper','r-lower','r-num','r-spec'].forEach((id, i) => {
+        const keys = ['len','upper','lower','num','spec'];
+        document.getElementById(id).className = 'pass-rule' + (c[keys[i]]?' ok':'');
+    });
+
+    const colors = ['','#ef4444','#f59e0b','#f97316','#10b981','#10b981'];
+    const labels = ['','Очень слабый','Слабый','Средний','Сильный','Очень сильный'];
+    for (let i=1;i<=4;i++) {
+        document.getElementById('sb'+i).style.background = i<=score ? colors[score] : '#1e2a3a';
+    }
+    document.getElementById('strengthLabel').textContent = p ? labels[score] : '';
+    document.getElementById('strengthLabel').style.color = colors[score];
+
+    // Блокируем кнопку если пароль слабый
+    document.getElementById('authBtn').disabled = p.length > 0 && score < 3;
 }
+
+function togglePass(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    if (inp.type === 'password') { inp.type='text'; btn.textContent='🙈'; }
+    else { inp.type='password'; btn.textContent='👁'; }
+}
+
+// Auth modal
+function openModal() { document.getElementById('authModal').style.display='flex'; showLogin(); }
+function closeModal() { document.getElementById('authModal').style.display='none'; }
 
 function showLogin() {
-    document.getElementById('authView').style.display = 'block';
-    document.getElementById('forgotView').style.display = 'none';
-    document.getElementById('authMsg').innerHTML = '';
+    document.getElementById('authView').style.display='block';
+    document.getElementById('forgotView').style.display='none';
+    document.getElementById('authMsg').innerHTML='';
 }
-
 function showForgot() {
-    document.getElementById('authView').style.display = 'none';
-    document.getElementById('forgotView').style.display = 'block';
-    document.getElementById('forgotMsg').innerHTML = '';
+    document.getElementById('authView').style.display='none';
+    document.getElementById('forgotView').style.display='block';
+    document.getElementById('forgotMsg').innerHTML='';
     const email = document.getElementById('authEmail').value;
-    if (email) document.getElementById('forgotEmail').value = email;
+    if(email) document.getElementById('forgotEmail').value=email;
 }
 
 function switchTab(mode) {
     authMode = mode;
     document.querySelectorAll('.auth-tab').forEach((t,i) => {
-        t.classList.toggle('active', (i===0&&mode==='login')||(i===1&&mode==='register'));
+        t.classList.toggle('active',(i===0&&mode==='login')||(i===1&&mode==='register'));
     });
-    document.getElementById('authBtn').textContent = mode === 'login' ? 'Войти' : 'Зарегистрироваться';
-    document.getElementById('authNameWrap').style.display = mode === 'register' ? 'block' : 'none';
-    document.getElementById('forgotLink').style.display = mode === 'login' ? 'block' : 'none';
-    document.getElementById('authMsg').innerHTML = '';
+    document.getElementById('authBtn').textContent = mode==='login'?'Войти':'Зарегистрироваться';
+    document.getElementById('authBtn').disabled = false;
+    document.getElementById('authNameWrap').style.display = mode==='register'?'block':'none';
+    document.getElementById('forgotLink').style.display = mode==='login'?'block':'none';
+    document.getElementById('strengthWrap').style.display = mode==='register'?'block':'none';
+    document.getElementById('authMsg').innerHTML='';
+    document.getElementById('authPass').value='';
+    onPassInput();
 }
 
 function showMsg(text, type) {
-    document.getElementById('authMsg').innerHTML = `<div class="msg-${type}">${text}</div>`;
+    document.getElementById('authMsg').innerHTML=`<div class="msg-${type}">${text}</div>`;
 }
 
 async function doAuth() {
     const email = document.getElementById('authEmail').value.trim();
-    const pass = document.getElementById('authPass').value;
-    if (!email || !pass) { showMsg('Заполните все поля', 'error'); return; }
+    const pass  = document.getElementById('authPass').value;
+    if (!email||!pass) { showMsg('Заполните все поля','error'); return; }
 
-    document.getElementById('authBtn').textContent = '...';
+    if (authMode==='register') {
+        const c = checkPass(pass);
+        const score = Object.values(c).filter(Boolean).length;
+        if (score < 3) { showMsg('Пароль слишком слабый. Используйте минимум 8 символов, цифры и буквы.','error'); return; }
+    }
 
-    if (authMode === 'login') {
-        const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-        if (error) {
-            showMsg('Неверный email или пароль', 'error');
-            document.getElementById('authBtn').textContent = 'Войти';
-            return;
-        }
-        currentUser = data.user;
-        closeModal();
-        renderUserBar();
+    document.getElementById('authBtn').textContent='...';
+
+    if (authMode==='login') {
+        const {data, error} = await sb.auth.signInWithPassword({email, password:pass});
+        if (error) { showMsg('Неверный email или пароль','error'); document.getElementById('authBtn').textContent='Войти'; return; }
+        currentUser=data.user; closeModal(); renderUserBar();
     } else {
-        const { error } = await sb.auth.signUp({ email, password: pass });
-        if (error) {
-            showMsg(error.message, 'error');
-            document.getElementById('authBtn').textContent = 'Зарегистрироваться';
-            return;
-        }
-        showMsg('✅ Проверьте почту и подтвердите email!', 'success');
-        document.getElementById('authBtn').textContent = 'Зарегистрироваться';
+        const {error} = await sb.auth.signUp({email, password:pass});
+        if (error) { showMsg(error.message,'error'); document.getElementById('authBtn').textContent='Зарегистрироваться'; return; }
+        showMsg('✅ Проверьте почту и подтвердите email!','success');
+        document.getElementById('authBtn').textContent='Зарегистрироваться';
     }
 }
 
 async function doForgot() {
     const email = document.getElementById('forgotEmail').value.trim();
-    if (!email) {
-        document.getElementById('forgotMsg').innerHTML = '<div class="msg-error">Введите email</div>';
-        return;
-    }
-
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://marketanalyst.kz'
-    });
-
-    if (error) {
-        document.getElementById('forgotMsg').innerHTML = `<div class="msg-error">${error.message}</div>`;
-    } else {
-        document.getElementById('forgotMsg').innerHTML = '<div class="msg-success">✅ Ссылка отправлена! Проверьте почту.</div>';
-    }
+    if (!email) { document.getElementById('forgotMsg').innerHTML='<div class="msg-error">Введите email</div>'; return; }
+    const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo:'https://marketanalyst.kz'});
+    document.getElementById('forgotMsg').innerHTML = error
+        ? `<div class="msg-error">${error.message}</div>`
+        : '<div class="msg-success">✅ Ссылка отправлена! Проверьте почту.</div>';
 }
 
-async function logout() {
-    await sb.auth.signOut();
-    currentUser = null;
-    renderUserBar();
-}
+async function logout() { await sb.auth.signOut(); currentUser=null; renderUserBar(); }
 
 // Results
-function scoreColor(v, invert=false) {
-    const val = invert ? (100-v) : v;
-    if (val >= 70) return '#10b981';
-    if (val >= 40) return '#f59e0b';
-    return '#ef4444';
+function scoreColor(v,invert=false) {
+    const val=invert?(100-v):v;
+    return val>=70?'#10b981':val>=40?'#f59e0b':'#ef4444';
 }
-
-function scoreBar(label, value, invert=false) {
-    const v = Number(value) || 0;
-    return `
-        <div style="margin-bottom:12px">
-            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-                <span style="color:#9ca3af">${label}</span>
-                <span style="font-weight:700;color:${scoreColor(v,invert)}">${v}/100</span>
-            </div>
-            <div class="score-bar"><div class="score-fill" style="width:${v}%;background:${scoreColor(v,invert)}"></div></div>
-        </div>`;
+function scoreBar(label,value,invert=false) {
+    const v=Number(value)||0;
+    return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:#9ca3af">${label}</span>
+            <span style="font-weight:700;color:${scoreColor(v,invert)}">${v}/100</span>
+        </div>
+        <div class="score-bar"><div class="score-fill" style="width:${v}%;background:${scoreColor(v,invert)}"></div></div>
+    </div>`;
 }
 
 function renderResult(tabId) {
-    if (!D) return;
-    const stats = D.stats || {};
-    const competitors = Array.isArray(D.competitors) ? D.competitors : [];
-    const ai = D.ai || {};
-    const hasAI = ai && !ai.error && typeof ai.verdict === 'string' && ai.verdict.length > 0;
+    if(!D) return;
+    const stats=D.stats||{}, competitors=Array.isArray(D.competitors)?D.competitors:[], ai=D.ai||{};
+    const hasAI=ai&&!ai.error&&typeof ai.verdict==='string'&&ai.verdict.length>0;
+    const verdict=hasAI?ai.verdict:'—';
+    const verdictText=hasAI?(ai.verdictText||''):'AI-анализ недоступен.';
+    const vc=verdict==='ВОЙТИ'?'#10b981':verdict==='НЕ ВХОДИТЬ'?'#ef4444':'#f59e0b';
+    const nicheScore=Number(hasAI?(ai.nicheScore??stats.nicheScore??0):(stats.nicheScore??0));
+    const demandScore=Number(hasAI?(ai.demandScore??stats.demandScore??0):(stats.demandScore??0));
+    const marginScore=Number(hasAI?(ai.marginScore??0):0);
+    const compScore=Number(hasAI?(ai.competitionScore??stats.competitionScore??0):(stats.competitionScore??0));
+    const optimalPrice=hasAI&&ai.optimalPrice?fmt(ai.optimalPrice)+' ₸':'—';
+    const marginPct=hasAI&&ai.marginPct?ai.marginPct+'%':'—';
+    const monthlyProfit=hasAI&&ai.monthlyProfit?fmt(ai.monthlyProfit)+' ₸':'—';
+    const breakEvenUnits=hasAI&&ai.breakEvenUnits?ai.breakEvenUnits+' шт.':'—';
 
-    const verdict = hasAI ? ai.verdict : '—';
-    const verdictText = hasAI ? (ai.verdictText || '') : 'AI-анализ недоступен.';
-    const vc = verdict === 'ВОЙТИ' ? '#10b981' : verdict === 'НЕ ВХОДИТЬ' ? '#ef4444' : '#f59e0b';
-
-    const nicheScore  = Number(hasAI ? (ai.nicheScore ?? stats.nicheScore ?? 0) : (stats.nicheScore ?? 0));
-    const demandScore = Number(hasAI ? (ai.demandScore ?? stats.demandScore ?? 0) : (stats.demandScore ?? 0));
-    const marginScore = Number(hasAI ? (ai.marginScore ?? 0) : 0);
-    const compScore   = Number(hasAI ? (ai.competitionScore ?? stats.competitionScore ?? 0) : (stats.competitionScore ?? 0));
-
-    const optimalPrice   = hasAI && ai.optimalPrice   ? fmt(ai.optimalPrice) + ' ₸'  : '—';
-    const marginPct      = hasAI && ai.marginPct      ? ai.marginPct + '%'            : '—';
-    const monthlyProfit  = hasAI && ai.monthlyProfit  ? fmt(ai.monthlyProfit) + ' ₸' : '—';
-    const breakEvenUnits = hasAI && ai.breakEvenUnits ? ai.breakEvenUnits + ' шт.'   : '—';
-
-    let content = `
-        <div class="card" style="border-left:4px solid ${vc};margin-bottom:15px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                <span style="font-size:22px;font-weight:900;color:${vc}">${verdict}</span>
-            </div>
-            <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
+    let content=`
+    <div class="card" style="border-left:4px solid ${vc};margin-bottom:15px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="font-size:22px;font-weight:900;color:${vc}">${verdict}</span>
         </div>
+        <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px">
+        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТОВАРОВ В НИШЕ</div><div style="font-size:22px;font-weight:900;color:#f97316">${stats.totalFound??0}</div></div>
+        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">СРЕДНЯЯ ЦЕНА</div><div style="font-size:18px;font-weight:900">${fmt(stats.avgPrice)} ₸</div></div>
+        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ВСЕГО ОТЗЫВОВ</div><div style="font-size:18px;font-weight:900">${fmt(stats.totalReviews)}</div></div>
+        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ОПТИМ. ЦЕНА</div><div style="font-size:18px;font-weight:900;color:#10b981">${optimalPrice}</div></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:15px">
+        <button class="tab ${tabId==='niche'?'on':''}" onclick="renderResult('niche')">Ниша</button>
+        <button class="tab ${tabId==='rivals'?'on':''}" onclick="renderResult('rivals')">Конкуренты</button>
+    </div>`;
 
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px">
-            <div class="card" style="text-align:center">
-                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТОВАРОВ В НИШЕ</div>
-                <div style="font-size:22px;font-weight:900;color:#f97316">${stats.totalFound ?? 0}</div>
-            </div>
-            <div class="card" style="text-align:center">
-                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">СРЕДНЯЯ ЦЕНА</div>
-                <div style="font-size:18px;font-weight:900">${fmt(stats.avgPrice)} ₸</div>
-            </div>
-            <div class="card" style="text-align:center">
-                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ВСЕГО ОТЗЫВОВ</div>
-                <div style="font-size:18px;font-weight:900">${fmt(stats.totalReviews)}</div>
-            </div>
-            <div class="card" style="text-align:center">
-                <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ОПТИМ. ЦЕНА</div>
-                <div style="font-size:18px;font-weight:900;color:#10b981">${optimalPrice}</div>
-            </div>
-        </div>
-
-        <div style="display:flex;gap:10px;margin-bottom:15px">
-            <button class="tab ${tabId==='niche'?'on':''}" onclick="renderResult('niche')">Ниша</button>
-            <button class="tab ${tabId==='rivals'?'on':''}" onclick="renderResult('rivals')">Конкуренты</button>
-        </div>`;
-
-    if (tabId === 'niche') {
-        const opportunities = hasAI
-            ? (Array.isArray(ai.freeSegments) && ai.freeSegments.length ? ai.freeSegments : (Array.isArray(ai.topOpportunities) ? ai.topOpportunities : []))
-            : [];
-        const risks    = hasAI && Array.isArray(ai.topRisks) ? ai.topRisks : [];
-        const keywords = hasAI && Array.isArray(ai.keywords)  ? ai.keywords  : [];
-
-        content += `
+    if(tabId==='niche'){
+        const opps=hasAI?(Array.isArray(ai.freeSegments)&&ai.freeSegments.length?ai.freeSegments:(Array.isArray(ai.topOpportunities)?ai.topOpportunities:[])):[];
+        const risks=hasAI&&Array.isArray(ai.topRisks)?ai.topRisks:[];
+        const keywords=hasAI&&Array.isArray(ai.keywords)?ai.keywords:[];
+        content+=`
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
             <div class="card">
                 <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">📊 СКОРЫ НИШИ</div>
-                ${scoreBar('Привлекательность ниши', nicheScore)}
-                ${scoreBar('Спрос', demandScore)}
-                ${scoreBar('Маржинальность', marginScore)}
-                ${scoreBar('Конкуренция (выше = хуже)', compScore, true)}
+                ${scoreBar('Привлекательность ниши',nicheScore)}
+                ${scoreBar('Спрос',demandScore)}
+                ${scoreBar('Маржинальность',marginScore)}
+                ${scoreBar('Конкуренция (выше = хуже)',compScore,true)}
             </div>
             <div class="card">
                 <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">💰 ФИНАНСЫ</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                     ${[['Оптим. цена',optimalPrice],['Маржа',marginPct],['Прибыль/мес.',monthlyProfit],['Окупаемость',breakEvenUnits],['Мин. цена',fmt(stats.minPrice)+' ₸'],['Макс. цена',fmt(stats.maxPrice)+' ₸']].map(([l,v])=>`
-                        <div style="background:#060b14;border-radius:8px;padding:8px">
-                            <div style="font-size:9px;color:#4b5563">${l}</div>
-                            <div style="font-weight:700;font-size:13px;margin-top:2px">${v}</div>
-                        </div>`).join('')}
+                    <div style="background:#060b14;border-radius:8px;padding:8px">
+                        <div style="font-size:9px;color:#4b5563">${l}</div>
+                        <div style="font-weight:700;font-size:13px;margin-top:2px">${v}</div>
+                    </div>`).join('')}
                 </div>
             </div>
         </div>
-        ${opportunities.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:10px">✅ ВОЗМОЖНОСТИ</div>${opportunities.map(o=>`<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${o}</div>`).join('')}</div>`:''}
+        ${opps.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:10px">✅ ВОЗМОЖНОСТИ</div>${opps.map(o=>`<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${o}</div>`).join('')}</div>`:''}
         ${risks.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:10px">⚠️ РИСКИ</div>${risks.map(r=>`<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${r}</div>`).join('')}</div>`:''}
         ${keywords.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:10px">🔑 КЛЮЧЕВЫЕ СЛОВА</div><div style="display:flex;flex-wrap:wrap;gap:6px">${keywords.map(k=>`<span class="pill" style="background:#1e2a3a;color:#9ca3af">${k}</span>`).join('')}</div></div>`:''}`;
     } else {
-        content += `
-        <div class="card">
+        content+=`<div class="card">
             <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🏆 КОНКУРЕНТЫ В НИШЕ (${competitors.length})</div>
-            <table>
-                <thead><tr><th>ТОВАР</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ПРОДАВЕЦ</th></tr></thead>
-                <tbody>
-                ${competitors.length?competitors.map((c,i)=>`
-                    <tr>
-                        <td><a href="${c.url||'#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name||'—'}</a></td>
-                        <td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td>
-                        <td><span style="color:#f59e0b">★</span> ${c.rating??'—'}</td>
-                        <td>${fmt(c.reviews)}</td>
-                        <td style="color:#6b7280;font-size:11px">${c.seller||'—'}</td>
-                    </tr>`).join(''):`<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Нет данных</td></tr>`}
-                </tbody>
-            </table>
+            <table><thead><tr><th>ТОВАР</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ПРОДАВЕЦ</th></tr></thead>
+            <tbody>${competitors.length?competitors.map((c,i)=>`<tr>
+                <td><a href="${c.url||'#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name||'—'}</a></td>
+                <td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td>
+                <td><span style="color:#f59e0b">★</span> ${c.rating??'—'}</td>
+                <td>${fmt(c.reviews)}</td>
+                <td style="color:#6b7280;font-size:11px">${c.seller||'—'}</td>
+            </tr>`).join(''):`<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Нет данных</td></tr>`}
+            </tbody></table>
         </div>`;
     }
-
-    document.getElementById('result').innerHTML = content;
+    document.getElementById('result').innerHTML=content;
 }
 
 init();
