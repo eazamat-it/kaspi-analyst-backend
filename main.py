@@ -6,12 +6,12 @@ import asyncio
 import sqlite3
 import json
 import time
-import hashlib
 import os
 
-app = FastAPI(title="KaspiAnalyst API", version="3.2.0")
+app = FastAPI(title="KaspiAnalyst API", version="3.5.0")
 
 # Читаем ключ Anthropic из переменных окружения Render
+# Оставляем именно так, ключ подтянется из настроек (Environment) автоматически
 ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 app.add_middleware(
@@ -29,16 +29,6 @@ HEADERS = {
 }
 
 KASPI_URL = "https://kaspi.kz/yml/product-view/pl/results"
-DB_PATH = "kaspi.db"
-
-# --- DB & CACHE LOGIC ---
-def init_db():
-    con = sqlite3.connect(DB_PATH)
-    con.execute("CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, value TEXT, expires_at INTEGER)")
-    con.commit()
-    con.close()
-
-init_db()
 
 async def fetch_kaspi(query, page=0):
     params = {"q": query, "i": page, "c": "750000000", "limit": 20}
@@ -46,7 +36,8 @@ async def fetch_kaspi(query, page=0):
         try:
             r = await client.get(KASPI_URL, params=params)
             return r.json()
-        except: return {}
+        except:
+            return {}
 
 def parse_products(raw):
     products = []
@@ -72,6 +63,8 @@ def compute_stats(products):
     avg_rev = int(total_rev/len(products))
     weak = len([p for p in products if p["reviews"] < 10])
     strong = len([p for p in products if p["reviews"] >= 100])
+    
+    # Расчет индексов
     comp = min(100, strong * 15 + avg_rev * 0.1)
     
     return {
@@ -86,53 +79,80 @@ def compute_stats(products):
         "nicheScore": max(0, int(100 - comp)),
         "competitionScore": int(comp),
         "demandScore": min(100, int(total_rev / 50)),
-        "priceRanges": {"<5K": 0, "5-15K": 0, "15-35K": 0, "35-70K": 0, ">70K": 0} # Для упрощения
+        "priceRanges": {"<5K": 0, "5-15K": 0, "15-35K": 0, "35-70K": 0, ">70K": 0}
     }
 
 @app.post("/analyze")
 async def analyze(body: dict):
     query = body.get("query", "").strip()
-    if not query: raise HTTPException(status_code=400)
+    if not query:
+        raise HTTPException(status_code=400, detail="Query is required")
 
-    # 1. Данные Kaspi
-    res = await asyncio.gather(fetch_kaspi(query, 0), fetch_kaspi(query, 1))
-    prods = []
-    for r in res: prods.extend(parse_products(r))
+    # 1. Сбор данных с Kaspi (две страницы)
+    responses = await asyncio.gather(fetch_kaspi(query, 0), fetch_kaspi(query, 1))
+    all_products = []
+    for r in responses:
+        all_products.extend(parse_products(r))
     
+    # Удаление дублей
     seen, unique = set(), []
-    for p in prods:
+    for p in all_products:
         if p["id"] not in seen:
-            seen.add(p["id"]); unique.append(p)
+            seen.add(p["id"])
+            unique.append(p)
             
     stats = compute_stats(unique)
-    top = sorted(unique, key=lambda x: x["reviews"], reverse=True)[:8]
+    top_competitors = sorted(unique, key=lambda x: x["reviews"], reverse=True)[:8]
 
-    # 2. Запрос к AI (Claude)
-    ai_final = {}
+    # 2. Анализ через Claude AI
+    ai_analysis = {}
     if ANTHROPIC_KEY:
-        prompt = f"Ниша: {query}. Статистика: {stats}. Ответь JSON по шаблону: nicheScore, competitionScore, demandScore, marginScore, verdict, verdictText, optimalPrice, marginPct, monthlyProfit, breakEvenUnits, priceTrend, priceTrendText, seasonality, freeSegments[], topOpportunities[], topRisks[], keywords[], entryStrategy, reviewTip, pricingTip"
-        
-        async with httpx.AsyncClient(timeout=40.0) as client:
-            r_ai = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": ANTHROPIC_KEY,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json"
-                },
-                json={
-                    "model": "claude-3-haiku-20240307",
-                    "max_tokens": 1000,
-                    "messages": [{"role": "user", "content": prompt}]
-                }
-            )
-            if r_ai.status_code == 200:
-                raw = r_ai.json()["content"][0]["text"]
-                ai_final = json.loads(raw.replace("```json", "").replace("```", "").strip())
+        # Промпт с четким требованием формата JSON
+        prompt = (
+            f"Ты эксперт по маркетплейсу Kaspi.kz. Проанализируй товар: '{query}'.\n"
+            f"Статистика ниши: {json.dumps(stats)}.\n"
+            "Верни ответ СТРОГО в формате JSON с полями: "
+            "nicheScore (0-100), competitionScore (0-100), demandScore (0-100), marginScore (0-100), "
+            "verdict ('ВОЙТИ', 'ОСТОРОЖНО' или 'НЕ ВХОДИТЬ'), verdictText (1 предложение), "
+            "optimalPrice (число), marginPct (число), monthlyProfit (число), breakEvenUnits (число), "
+            "priceTrend ('РАСТЁТ', 'ПАДАЕТ' или 'СТАБИЛЬНА'), priceTrendText, seasonality, "
+            "freeSegments (массив строк), topOpportunities (массив), topRisks (массив), keywords (массив), "
+            "entryStrategy, reviewTip, pricingTip. Только JSON, без лишнего текста."
+        )
 
+        try:
+            async with httpx.AsyncClient(timeout=45.0) as client:
+                r_ai = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": ANTHROPIC_KEY,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json"
+                    },
+                    json={
+                        "model": "claude-3-haiku-20240307",
+                        "max_tokens": 1200,
+                        "messages": [{"role": "user", "content": prompt}]
+                    }
+                )
+                if r_ai.status_code == 200:
+                    ai_text = r_ai.json()["content"][0]["text"]
+                    # Очистка текста от markdown-разметки если она есть
+                    clean_json = ai_text.replace("```json", "").replace("```", "").strip()
+                    ai_analysis = json.loads(clean_json)
+        except Exception as e:
+            print(f"AI Error: {e}")
+            ai_analysis = {"error": "AI analysis temporarily unavailable"}
+
+    # 3. Финальный ответ
     return JSONResponse({
         "stats": stats,
-        "competitors": top,
-        "ai": ai_final,
+        "competitors": top_competitors,
+        "ai": ai_analysis,
         "fromCache": False
     })
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
