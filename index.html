@@ -4,11 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MarketAnalyst KZ — Анализ ниш казахстанского рынка</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#060b14;color:#e2e8f0;font-family:'Segoe UI',sans-serif;min-height:100vh}
-input,select{background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 16px;height:44px;outline:none;width:100%}
+input{background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 16px;height:44px;outline:none;width:100%}
 input:focus{border-color:#f97316}
+input::placeholder{color:#4b5563}
 button{cursor:pointer;border:none;font-weight:700;font-size:13px;font-family:'Segoe UI',sans-serif}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .card{background:linear-gradient(145deg,#111827,#0f172a);border:1px solid #1e2a3a;border-radius:14px;padding:18px}
@@ -24,15 +26,41 @@ th{padding:10px 12px;text-align:left;color:#4b5563;font-size:10px;font-weight:70
 td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 .score-bar{height:6px;border-radius:3px;background:#1e2a3a;margin-top:4px}
 .score-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+/* Auth modal */
+.modal-overlay{position:fixed;inset:0;background:#000000aa;display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:#111827;border:1px solid #1e2a3a;border-radius:16px;padding:32px;width:100%;max-width:400px;margin:16px}
+.modal h2{font-size:20px;font-weight:900;margin-bottom:6px}
+.modal p{color:#6b7280;font-size:13px;margin-bottom:24px}
+.auth-input{background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;color:#e2e8f0;font-size:14px;padding:0 16px;height:44px;outline:none;width:100%;margin-bottom:12px}
+.auth-input:focus{border-color:#f97316}
+.auth-input::placeholder{color:#4b5563}
+.btn-primary{width:100%;height:44px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;margin-bottom:12px}
+.btn-secondary{width:100%;height:44px;background:transparent;color:#9ca3af;border-radius:10px;font-size:13px;font-weight:600;border:1px solid #1e2a3a;cursor:pointer}
+.btn-secondary:hover{border-color:#f97316;color:#f97316}
+.auth-tabs{display:flex;margin-bottom:24px;border-bottom:1px solid #1e2a3a}
+.auth-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent}
+.auth-tab.active{color:#f97316;border-bottom-color:#f97316}
+.msg-success{background:#10b98120;border:1px solid #10b98140;color:#10b981;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
+.msg-error{background:#ef444420;border:1px solid #ef444440;color:#ef4444;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
+
+/* User bar */
+.user-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#0f172a;border:1px solid #1e2a3a;border-radius:10px;font-size:12px}
+.user-bar .email{color:#9ca3af;flex:1}
+.user-bar .limit{color:#f97316;font-weight:700}
+.btn-logout{background:transparent;border:1px solid #1e2a3a;color:#6b7280;border-radius:8px;padding:4px 12px;font-size:11px;cursor:pointer}
+.btn-logout:hover{border-color:#ef4444;color:#ef4444}
+.btn-login{background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:8px;padding:6px 16px;font-size:12px;cursor:pointer;border:none}
 </style>
 </head>
 <body>
 <div style="max-width:1080px;margin:0 auto;padding:16px">
 
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:12px 0;border-bottom:1px solid #1e2a3a">
+<!-- Header -->
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 0;border-bottom:1px solid #1e2a3a">
   <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff">M</div>
-  <span style="font-weight:900;font-size:20px">Market<span style="color:#f97316">Analyst</span> <span style="color:#6b7280;font-size:14px;font-weight:400">KZ</span></span>
-  <span class="pill" style="background:#10b98118;color:#10b981;border:1px solid #10b98130;font-size:9px">AI АНАЛИЗ</span>
+  <span style="font-weight:900;font-size:20px;flex:1">Market<span style="color:#f97316">Analyst</span> <span style="color:#6b7280;font-size:14px;font-weight:400">KZ</span></span>
+  <div id="userBar"></div>
 </div>
 
 <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">Анализ ниш <span style="color:#f97316">казахстанского рынка</span></h1>
@@ -77,9 +105,78 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 
 </div>
 
+<!-- Auth Modal -->
+<div id="authModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>Войдите в аккаунт</h2>
+    <p>Бесплатно: 3 анализа в день</p>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Вход</div>
+      <div class="auth-tab" onclick="switchTab('register')">Регистрация</div>
+    </div>
+    <div id="authMsg"></div>
+    <input class="auth-input" id="authEmail" type="email" placeholder="Email адрес"/>
+    <input class="auth-input" id="authPass" type="password" placeholder="Пароль"/>
+    <div id="authNameWrap" style="display:none">
+      <input class="auth-input" id="authName" type="text" placeholder="Ваше имя (необязательно)"/>
+    </div>
+    <button class="btn-primary" id="authBtn" onclick="doAuth()">Войти</button>
+    <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+  </div>
+</div>
+
 <script>
+const SUPABASE_URL = 'https://kbdrjwvbkdbhjokyqlzy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_H464vwbrdU4BKP14YtYkLg_J7rjRkBO';
 const API = 'https://kaspi-analyst-backend.onrender.com';
+const FREE_LIMIT = 3;
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let D = null;
+let currentUser = null;
+let authMode = 'login';
+
+// Пингуем сервер при загрузке
+fetch(`${API}/`).catch(()=>{});
+
+// Инициализация
+async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+        currentUser = session.user;
+        renderUserBar();
+    } else {
+        renderUserBar();
+    }
+}
+
+function renderUserBar() {
+    const bar = document.getElementById('userBar');
+    if (currentUser) {
+        const used = getUsedToday();
+        const left = Math.max(0, FREE_LIMIT - used);
+        bar.innerHTML = `
+            <div class="user-bar">
+                <span class="email">👤 ${currentUser.email}</span>
+                <span class="limit">🔍 ${left}/${FREE_LIMIT} запросов</span>
+                <button class="btn-logout" onclick="logout()">Выйти</button>
+            </div>`;
+    } else {
+        bar.innerHTML = `<button class="btn-login" onclick="openModal()">Войти / Регистрация</button>`;
+    }
+}
+
+function getUsedToday() {
+    const key = `ma_used_${new Date().toDateString()}_${currentUser?.id || 'guest'}`;
+    return parseInt(localStorage.getItem(key) || '0');
+}
+
+function incrementUsed() {
+    const key = `ma_used_${new Date().toDateString()}_${currentUser?.id || 'guest'}`;
+    const val = getUsedToday() + 1;
+    localStorage.setItem(key, val);
+    return val;
+}
 
 function show(id) {
     ['loading','err','result','empty'].forEach(x => {
@@ -91,12 +188,20 @@ function show(id) {
 function fmt(n) { return n ? Number(n).toLocaleString('ru-KZ') : '0'; }
 function setQ(v) { document.getElementById('q').value = v; run(); }
 
-// Пингуем сервер при загрузке страницы чтобы разбудить заранее
-fetch(`${API}/`).catch(()=>{});
-
 async function run() {
     const q = document.getElementById('q').value.trim();
     if (!q) return;
+
+    // Проверка лимита
+    if (!currentUser) {
+        const used = getUsedToday();
+        if (used >= FREE_LIMIT) {
+            openModal();
+            showMsg('Бесплатный лимит исчерпан. Войдите для продолжения.', 'error');
+            return;
+        }
+    }
+
     show('loading');
     try {
         const r = await fetch(`${API}/analyze`, {
@@ -106,32 +211,87 @@ async function run() {
         });
         if (!r.ok) throw new Error(`Ошибка сервера ${r.status}`);
         D = await r.json();
+        incrementUsed();
+        renderUserBar();
         renderResult('niche');
         show('result');
     } catch (e) {
-        document.getElementById('errmsg').textContent = e.message || 'Неизвестная ошибка. Попробуйте снова.';
+        document.getElementById('errmsg').textContent = e.message || 'Неизвестная ошибка';
         show('err');
     }
 }
 
-function scoreColor(v) {
-    if (v >= 70) return '#10b981';
-    if (v >= 40) return '#f59e0b';
+// Auth functions
+function openModal() {
+    document.getElementById('authModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('authModal').style.display = 'none';
+    document.getElementById('authMsg').innerHTML = '';
+}
+
+function switchTab(mode) {
+    authMode = mode;
+    document.querySelectorAll('.auth-tab').forEach((t,i) => {
+        t.classList.toggle('active', (i===0&&mode==='login')||(i===1&&mode==='register'));
+    });
+    document.getElementById('authBtn').textContent = mode === 'login' ? 'Войти' : 'Зарегистрироваться';
+    document.getElementById('authNameWrap').style.display = mode === 'register' ? 'block' : 'none';
+    document.getElementById('authMsg').innerHTML = '';
+}
+
+function showMsg(text, type) {
+    document.getElementById('authMsg').innerHTML = `<div class="msg-${type}">${text}</div>`;
+}
+
+async function doAuth() {
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value;
+    if (!email || !pass) { showMsg('Заполните все поля', 'error'); return; }
+
+    document.getElementById('authBtn').textContent = '...';
+
+    if (authMode === 'login') {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+        if (error) { showMsg(error.message, 'error'); document.getElementById('authBtn').textContent = 'Войти'; return; }
+        currentUser = data.user;
+        closeModal();
+        renderUserBar();
+    } else {
+        const { data, error } = await sb.auth.signUp({ email, password: pass });
+        if (error) { showMsg(error.message, 'error'); document.getElementById('authBtn').textContent = 'Зарегистрироваться'; return; }
+        showMsg('✅ Проверьте почту и подтвердите email!', 'success');
+        document.getElementById('authBtn').textContent = 'Зарегистрироваться';
+    }
+}
+
+async function logout() {
+    await sb.auth.signOut();
+    currentUser = null;
+    renderUserBar();
+}
+
+// Result rendering
+function scoreColor(v, invert=false) {
+    const val = invert ? (100-v) : v;
+    if (val >= 70) return '#10b981';
+    if (val >= 40) return '#f59e0b';
     return '#ef4444';
 }
 
-function scoreBar(label, value, invert = false) {
+function scoreBar(label, value, invert=false) {
     const v = Number(value) || 0;
-    const displayV = invert ? (100 - v) : v;
     return `
         <div style="margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
                 <span style="color:#9ca3af">${label}</span>
-                <span style="font-weight:700;color:${scoreColor(displayV)}">${v}/100</span>
+                <span style="font-weight:700;color:${scoreColor(v,invert)}">${v}/100</span>
             </div>
-            <div class="score-bar"><div class="score-fill" style="width:${v}%;background:${scoreColor(displayV)}"></div></div>
+            <div class="score-bar"><div class="score-fill" style="width:${v}%;background:${scoreColor(v,invert)}"></div></div>
         </div>`;
 }
+
 function renderResult(tabId) {
     if (!D) return;
     const stats = D.stats || {};
@@ -199,7 +359,7 @@ function renderResult(tabId) {
                 ${scoreBar('Привлекательность ниши', nicheScore)}
                 ${scoreBar('Спрос', demandScore)}
                 ${scoreBar('Маржинальность', marginScore)}
-                ${scoreBar('Конкуренция (выше = хуже)', compScore)}
+                ${scoreBar('Конкуренция (выше = хуже)', compScore, true)}
             </div>
             <div class="card">
                 <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">💰 ФИНАНСЫ</div>
@@ -237,6 +397,8 @@ function renderResult(tabId) {
 
     document.getElementById('result').innerHTML = content;
 }
+
+init();
 </script>
 </body>
 </html>
