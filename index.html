@@ -545,13 +545,24 @@ function calcUpdate() {
     const adviceText = document.getElementById('calcAdviceText');
     adviceEl.style.display='block';
 
+    // Рассчитываем оптимальную цену независимо от введённой
+    const calcOptimal = Math.ceil(costPerUnit / (1 - commission/100 - tax/100 - 0.30));
+
     let advice = [];
     if (isBad) {
         advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#ef4444">⚠️ Маржа ${marginPct}% — слишком низкая для стабильного бизнеса</div>`);
-        advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Попробуйте найти поставщика дешевле или поднять цену до ${fmt(Math.round(optimalSell))} ₸</div>`);
+        if (sellInput && sellInput < calcOptimal) {
+            advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 При вашей цене ${fmt(Math.round(sellInput))} ₸ бизнес убыточен. Рекомендуемая цена продажи: <strong>${fmt(calcOptimal)} ₸</strong></div>`);
+        } else {
+            advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Попробуйте найти поставщика дешевле. При текущей себестоимости рекомендуемая цена: <strong>${fmt(calcOptimal)} ₸</strong></div>`);
+        }
     }
     if (isOk) {
-        advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Маржа приемлемая, но рекомендуем поднять цену до ${fmt(Math.round(optimalSell))} ₸ для стабильности</div>`);
+        if (sellInput && sellInput < calcOptimal) {
+            advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Маржа приемлемая. Для увеличения прибыли можно поднять цену до <strong>${fmt(calcOptimal)} ₸</strong></div>`);
+        } else {
+            advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#d1d5db">💡 Маржа приемлемая. Попробуйте снизить себестоимость для увеличения прибыли</div>`);
+        }
     }
     if (isGood) {
         advice.push(`<div style="padding:6px 0;border-bottom:1px solid #1e2a3a;font-size:12px;color:#10b981">✅ Отличная маржа! При ${qty} продажах в месяц заработаете ${fmt(monthlyProfit)} ₸</div>`);
