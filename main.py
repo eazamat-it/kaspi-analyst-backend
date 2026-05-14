@@ -112,5 +112,6 @@ async def analyze(body: dict):
 async def test():
     return {
         "anthropic_key_set": bool(ANTHROPIC_KEY),
+        "supabase_key_set": bool(SUPABASE_SERVICE_KEY),
         "status": "ok"
     }
