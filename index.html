@@ -79,136 +79,60 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 const API = 'https://kaspi-analyst-backend.onrender.com';
 let D = null;
 
-// 1. Управление видимостью блоков
 function show(id) {
-    const sections = ['loading', 'err', 'result', 'empty'];
-    sections.forEach(x => {
+    ['loading', 'err', 'result', 'empty'].forEach(x => {
         const el = document.getElementById(x);
         if (el) el.style.display = (x === id ? 'block' : 'none');
     });
 }
 
-// 2. Форматирование тенге
-function fmt(n) {
-    return n ? Number(n).toLocaleString('ru-KZ') : '0';
-}
+function fmt(n) { return n ? Number(n).toLocaleString('ru-KZ') : '0'; }
 
-// 3. Быстрый выбор запроса
-function setQ(v) {
-    document.getElementById('q').value = v;
-    run();
-}
+function setQ(v) { document.getElementById('q').value = v; run(); }
 
-// 4. Основная логика запроса
 async function run() {
-    const qInput = document.getElementById('q');
-    const q = qInput.value.trim();
+    const q = document.getElementById('q').value.trim();
     if (!q) return;
-
-    const btn = document.getElementById('btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Анализируем...';
     show('loading');
-
     try {
-        const response = await fetch(`${API}/analyze`, {
+        const r = await fetch(`${API}/analyze`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ query: q })
         });
-
-        if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-
-        const data = await response.json();
-
-        if (data.ai && data.ai.error) {
-            throw new Error('AI временно недоступен: ' + data.ai.error);
-        }
-
-        D = data; // Сохраняем данные
-        renderResult('niche'); // Отрисовываем первую вкладку
+        D = await r.json();
+        renderResult('niche');
         show('result');
-
     } catch (e) {
-        console.error('Ошибка выполнения:', e);
         document.getElementById('errmsg').textContent = e.message;
         show('err');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Анализировать →';
     }
 }
 
-// 5. Отрисовка результатов
 function renderResult(tabId) {
     if (!D || !D.ai) return;
-
-    const { ai, stats, competitors, fromCache } = D;
-    const verdictColor = ai.verdict === 'ВОЙТИ' ? '#10b981' : ai.verdict === 'ОСТОРОЖНО' ? '#f59e0b' : '#ef4444';
-
-    const gaugeHTML = (v, l, c) => {
-        const val = v || 0;
-        const r = 34, circ = 2 * Math.PI * r, dash = (val / 100) * circ;
-        return `<div style="text-align:center">
-            <svg width="80" height="80">
-                <circle cx="40" cy="40" r="${r}" fill="none" stroke="#1e2030" stroke-width="6"/>
-                <circle cx="40" cy="40" r="${r}" fill="none" stroke="${c}" stroke-width="6"
-                    stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${circ * .25}" stroke-linecap="round"/>
-                <text x="40" y="45" text-anchor="middle" fill="${c}" font-size="14" font-weight="900">${val}</text>
-            </svg>
-            <div style="font-size:9px;color:#4b5563;font-weight:700;text-transform:uppercase">${l}</div>
-        </div>`;
-    };
-
-    let tabContent = '';
-    if (tabId === 'niche') {
-        tabContent = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="card"><div style="color:#10b981;font-weight:800;font-size:12px;margin-bottom:10px">🏔️ Свободные сегменты</div>
-            ${(ai.freeSegments || []).map(s => `<div style="font-size:12px;color:#d1d5db;margin-bottom:5px">· ${s}</div>`).join('')}</div>
-            <div class="card"><div style="color:#6366f1;font-weight:800;font-size:12px;margin-bottom:10px">✅ Возможности</div>
-            ${(ai.topOpportunities || []).map(o => `<div style="font-size:12px;color:#d1d5db;margin-bottom:5px">→ ${o}</div>`).join('')}</div>
-        </div>`;
-    } else if (tabId === 'rivals') {
-        tabContent = `<div class="card" style="padding:0;overflow:hidden">
-            <table>
-                <thead><tr><th>Товар</th><th>Магазин</th><th>Цена</th><th>Отзывы</th></tr></thead>
-                <tbody>${(competitors || []).map(c => `<tr><td>${c.name}</td><td>${c.seller}</td><td style="color:#f59e0b">${fmt(c.price)}</td><td>${c.reviews}</td></tr>`).join('')}</tbody>
-            </table>
-        </div>`;
+    const { ai, stats, competitors } = D;
+    const vc = ai.verdict === 'ВОЙТИ' ? '#10b981' : '#f59e0b';
+    
+    // Отрисовка вкладок и основного контента
+    let content = `
+        <div class="card" style="border-left:4px solid ${vc}; margin-bottom:15px">
+            <h2 style="color:${vc}">${ai.verdict}</h2>
+            <p>${ai.verdictText}</p>
+        </div>
+        <div style="display:flex; gap:10px; margin-bottom:15px">
+            <button class="tab ${tabId==='niche'?'on':''}" onclick="renderResult('niche')">Ниша</button>
+            <button class="tab ${tabId==='rivals'?'on':''}" onclick="renderResult('rivals')">Конкуренты</button>
+        </div>
+    `;
+    
+    if(tabId === 'niche') {
+        content += `<div class="card">Анализ ниши: ${ai.nicheScore}/100</div>`;
     } else {
-        tabContent = `<div class="card" style="text-align:center">
-            <div style="color:#f97316;font-weight:800;font-size:12px;margin-bottom:8px">Оптимальная цена</div>
-            <div style="font-size:24px;font-weight:900;color:#10b981">${fmt(ai.optimalPrice)} тг</div>
-            <div style="color:#4b5563;font-size:11px;margin-top:4px">Маржа: ${ai.marginPct}% | Прибыль: ${fmt(ai.monthlyProfit)} тг</div>
-        </div>`;
+        content += `<div class="card">Найдено конкурентов: ${competitors.length}</div>`;
     }
 
-    const tabs = ['niche', 'rivals', 'margin'];
-    const labels = {'niche':'Ниша', 'rivals':'Конкуренты', 'margin':'Маржа'};
-
-    document.getElementById('result').innerHTML = `
-        <div style="animation:fadeUp .4s ease">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:11px">
-                <span style="color:${fromCache?'#6366f1':'#10b981'};font-weight:700">${fromCache?'⚡ Архив':'🟢 Прямой эфир'}</span>
-                <span style="color:#4b5563">| Найдено: ${stats.totalFound || 0}</span>
-            </div>
-            <div class="card" style="border-left:4px solid ${verdictColor};margin-bottom:16px">
-                <div style="font-size:10px;color:#4b5563;font-weight:800;margin-bottom:4px">ВЕРДИКТ AI</div>
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-                    <span style="background:${verdictColor};color:#000;font-weight:900;padding:4px 12px;border-radius:20px">${ai.verdict}</span>
-                    <span style="font-size:12px;color:#d1d5db">${ai.verdictText}</span>
-                </div>
-                <div style="display:flex;justify-content:space-around;padding-top:15px;border-top:1px solid #1e2a3a">
-                    ${gaugeHTML(ai.nicheScore,'Ниша','#6366f1')}
-                    ${gaugeHTML(ai.demandScore,'Спрос','#10b981')}
-                    ${gaugeHTML(ai.marginScore,'Маржа','#f97316')}
-                </div>
-            </div>
-            <div style="display:flex;gap:6px;margin-bottom:14px">
-                ${tabs.map(t => `<button class="tab ${t===tabId?'on':''}" onclick="renderResult('${t}')">${labels[t]}</button>`).join('')}
-            </div>
-            <div id="tabcontent">${tabContent}</div>
-        </div>`;
+    document.getElementById('result').innerHTML = content;
 }
 </script>
 </body>
