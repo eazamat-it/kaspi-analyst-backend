@@ -94,11 +94,36 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
 .calc-bad{background:#ef444420;border:2px solid #ef444440;color:#ef4444}
 .calc-label{color:#6b7280;font-size:12px}
 .calc-value{font-weight:700}
+
+
+@media (min-width: 641px) {
+    #searchRow{flex-direction:row !important}
+    #searchRow input{flex:1}
+    #searchRow button{width:auto !important;padding:0 24px}
+    .stats-grid{grid-template-columns:repeat(4,1fr) !important}
+    .score-grid{grid-template-columns:1fr 1fr !important}
+    .calc-grid{grid-template-columns:1fr 1fr !important}
+    .cab-grid{grid-template-columns:1fr 1fr 1fr !important}
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 640px) {
+    .user-bar .email{max-width:100px}
+    .user-bar{gap:6px;padding:6px 10px}
+    .btn-cabinet{padding:4px 8px;font-size:10px}
+    .btn-logout{padding:4px 8px;font-size:10px}
+    .btn-login{padding:8px 14px;font-size:13px}
+    .modal{padding:20px;margin:10px}
+    .modal-wide{padding:20px;margin:10px;max-height:95vh}
+    .card{padding:14px}
+    .tab{padding:6px 12px;font-size:11px}
+    .qbtn{font-size:10px;padding:4px 10px}
+}
 </style>
 </head>
 <body>
 <div style="max-width:1080px;margin:0 auto;padding:16px">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 0;border-bottom:1px solid #1e2a3a">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px 0;border-bottom:1px solid #1e2a3a;flex-wrap:wrap">
     <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff">M</div>
     <span style="font-weight:900;font-size:20px;flex:1">Market<span style="color:#f97316">Analyst</span> <span style="color:#6b7280;font-size:14px;font-weight:400">KZ</span></span>
     <div id="userBar"></div>
@@ -116,9 +141,9 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
     <p style="color:#4b5563;margin-bottom:4px;font-size:13px">Введите товар → AI анализирует нишу, цены, маржу и конкурентов</p>
     <p style="color:#374151;margin-bottom:16px;font-size:11px">* Данные генерируются AI на основе анализа рынка Казахстана</p>
 
-    <div style="display:flex;gap:10px;margin-bottom:10px">
-      <input id="q" placeholder="Например: термос, bluetooth наушники, детские игрушки..." onkeydown="if(event.key==='Enter')run()"/>
-      <button onclick="run()" style="height:44px;padding:0 24px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;white-space:nowrap;box-shadow:0 4px 16px #f9731640">Анализировать →</button>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px" id="searchRow">
+      <input id="q" placeholder="Термос, наушники, чехол..." onkeydown="if(event.key==='Enter')run()" style="font-size:16px"/>
+      <button onclick="run()" style="height:48px;width:100%;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;font-size:15px;box-shadow:0 4px 16px #f9731640">🔍 Анализировать</button>
     </div>
 
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px">
@@ -155,7 +180,7 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
     <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">🧮 Калькулятор <span style="color:#f97316">юнит-экономики</span></h1>
     <p style="color:#4b5563;margin-bottom:20px;font-size:13px">Введите закупочную цену — узнайте за сколько продавать и сколько заработаете</p>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div style="display:grid;grid-template-columns:1fr;gap:16px">
       <!-- Left: inputs -->
       <div class="card">
         <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:16px">📦 ДАННЫЕ О ТОВАРЕ</div>
@@ -372,7 +397,7 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
           <div style="margin-left:auto" id="cabPlanBadge"></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
         <div class="card" style="text-align:center">
           <div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТАРИФ</div>
           <div style="font-size:16px;font-weight:900;color:#f97316" id="cabPlan">Бесплатный</div>
@@ -824,7 +849,7 @@ function renderResult(tabId){
         </div>
         <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:15px" class="stats-grid">
         <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТОВАРОВ В НИШЕ</div><div style="font-size:22px;font-weight:900;color:#f97316">${stats.totalFound??0}</div></div>
         <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">СРЕДНЯЯ ЦЕНА</div><div style="font-size:18px;font-weight:900">${fmt(stats.avgPrice)} ₸</div></div>
         <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ВСЕГО ОТЗЫВОВ</div><div style="font-size:18px;font-weight:900">${fmt(stats.totalReviews)}</div></div>
@@ -840,7 +865,7 @@ function renderResult(tabId){
         const risks=hasAI&&Array.isArray(ai.topRisks)?ai.topRisks:[];
         const keywords=hasAI&&Array.isArray(ai.keywords)?ai.keywords:[];
         content+=`
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+        <div style="display:grid;grid-template-columns:1fr;gap:10px">
             <div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px">📊 СКОРЫ НИШИ</div>
                 ${scoreBar('Привлекательность ниши',nicheScore)}${scoreBar('Спрос',demandScore)}${scoreBar('Маржинальность',marginScore)}${scoreBar('Конкуренция (выше = хуже)',compScore,true)}
             </div>
