@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MarketAnalyst KZ — Анализ ниш казахстанского рынка</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#060b14;color:#e2e8f0;font-family:'Segoe UI',sans-serif;min-height:100vh}
@@ -130,9 +131,10 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
   </div>
 
   <!-- Main tabs -->
-  <div style="display:flex;gap:8px;margin-bottom:20px">
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
     <button class="tab on" id="tabAnalyze" onclick="switchMainTab('analyze')">🔍 Анализ ниши</button>
     <button class="tab" id="tabCalc" onclick="switchMainTab('calc')">🧮 Калькулятор</button>
+    <button class="tab" id="tabExcel" onclick="switchMainTab('excel')">📊 Excel загрузка</button>
   </div>
 
   <!-- Analyze tab -->
@@ -300,6 +302,62 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
     </div>
   </div>
 </div>
+
+
+  <!-- Excel tab -->
+  <div id="excelSection" style="display:none">
+    <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">📊 Batch анализ через <span style="color:#f97316">Excel</span></h1>
+    <p style="color:#4b5563;margin-bottom:4px;font-size:13px">Загрузите список товаров — получите анализ всех сразу</p>
+    <p style="color:#374151;margin-bottom:20px;font-size:11px">* Доступно для зарегистрированных пользователей. Максимум 50 товаров за раз.</p>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">📋 ФОРМАТ ФАЙЛА</div>
+      <div style="background:#060b14;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;font-family:monospace">
+        <div style="color:#10b981;margin-bottom:4px">Колонка A: Наименование товара (обязательно)</div>
+        <div style="color:#f97316">Колонка B: Закупочная цена в тенге (необязательно)</div>
+      </div>
+      <button onclick="downloadTemplate()" style="padding:8px 16px;background:#1e2a3a;color:#e2e8f0;border-radius:8px;border:1px solid #374151;font-size:12px">
+        ⬇️ Скачать шаблон Excel
+      </button>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">📂 ЗАГРУЗИТЬ ФАЙЛ</div>
+      <div id="dropZone" onclick="document.getElementById('excelFile').click()" style="border:2px dashed #1e2a3a;border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:border-color .15s">
+        <div style="font-size:32px;margin-bottom:8px">📁</div>
+        <div style="font-weight:700;margin-bottom:4px">Нажмите для выбора файла</div>
+        <div style="font-size:12px;color:#6b7280">Поддерживается .xlsx и .xls</div>
+      </div>
+      <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none" onchange="handleExcelFile(event)"/>
+    </div>
+
+    <div id="excelPreview" style="display:none" class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:#6b7280">📋 ПРЕДПРОСМОТР</div>
+        <span id="previewCount" style="font-size:11px;color:#f97316;font-weight:700"></span>
+      </div>
+      <div id="previewTable" style="overflow-x:auto"></div>
+      <button id="startBatchBtn" onclick="startBatch()" style="margin-top:12px;width:100%;height:44px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer">
+        🚀 Запустить анализ
+      </button>
+    </div>
+
+    <div id="batchProgress" style="display:none" class="card" style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">⏳ АНАЛИЗИРУЕМ...</div>
+      <div style="background:#1e2a3a;border-radius:8px;height:8px;margin-bottom:8px">
+        <div id="progressBar" style="height:100%;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);width:0%;transition:width .3s"></div>
+      </div>
+      <div id="progressText" style="font-size:12px;color:#9ca3af;text-align:center"></div>
+    </div>
+
+    <div id="batchResults" style="display:none" class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:#6b7280">✅ РЕЗУЛЬТАТЫ</div>
+        <button onclick="downloadResults()" style="padding:6px 14px;background:#10b981;color:#fff;border-radius:8px;font-size:11px;font-weight:700;border:none;cursor:pointer">⬇️ Скачать Excel</button>
+      </div>
+      <div id="batchResultsTable" style="overflow-x:auto"></div>
+    </div>
+  </div>
 
 <!-- Auth Modal -->
 <div id="authModal" class="modal-overlay" style="display:none">
@@ -471,8 +529,10 @@ async function init() {
 function switchMainTab(tab) {
     document.getElementById('analyzeSection').style.display = tab==='analyze'?'block':'none';
     document.getElementById('calcSection').style.display = tab==='calc'?'block':'none';
+    document.getElementById('excelSection').style.display = tab==='excel'?'block':'none';
     document.getElementById('tabAnalyze').className = 'tab'+(tab==='analyze'?' on':'');
     document.getElementById('tabCalc').className = 'tab'+(tab==='calc'?' on':'');
+    document.getElementById('tabExcel').className = 'tab'+(tab==='excel'?' on':'');
 }
 
 function setTax(val, labelId) {
@@ -884,6 +944,223 @@ function renderResult(tabId){
             <tbody>${competitors.length?competitors.map((c,i)=>`<tr><td><a href="${c.url||'#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name||'—'}</a></td><td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td><td><span style="color:#f59e0b">★</span> ${c.rating??'—'}</td><td>${fmt(c.reviews)}</td><td style="color:#6b7280;font-size:11px">${c.seller||'—'}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Нет данных</td></tr>`}</tbody></table></div>`;
     }
     document.getElementById('result').innerHTML=content;
+}
+
+
+// ===== EXCEL =====
+let excelData = [];
+let batchResultsData = [];
+
+function downloadTemplate() {
+    const ws_data = [
+        ['Наименование товара', 'Закупочная цена (₸)'],
+        ['Термос Stanley 1L', 5000],
+        ['Bluetooth наушники', 3500],
+        ['Чехол iPhone 15', 800],
+        ['Фитнес резинки набор', 1200],
+        ['LED лампа 15W', 400],
+    ];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    ws['!cols'] = [{wch:30},{wch:20}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Товары');
+    XLSX.writeFile(wb, 'marketanalyst_template.xlsx');
+}
+
+function handleExcelFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type: 'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+
+        // Skip header row
+        excelData = rows.slice(1)
+            .filter(row => row[0])
+            .map(row => ({
+                query: String(row[0] || '').trim(),
+                buy_price: parseFloat(row[1]) || 0
+            }))
+            .filter(item => item.query);
+
+        if (excelData.length === 0) {
+            alert('Файл пустой или неверный формат');
+            return;
+        }
+
+        showPreview();
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function showPreview() {
+    document.getElementById('excelPreview').style.display = 'block';
+    document.getElementById('previewCount').textContent = `${excelData.length} товаров`;
+
+    const rows = excelData.slice(0, 5).map((item, i) => `
+        <tr>
+            <td style="padding:8px 12px;border-top:1px solid #1e2a3a;font-size:12px">${i+1}</td>
+            <td style="padding:8px 12px;border-top:1px solid #1e2a3a;font-size:12px">${item.query}</td>
+            <td style="padding:8px 12px;border-top:1px solid #1e2a3a;font-size:12px;color:#f97316">${item.buy_price ? fmt(item.buy_price)+' ₸' : '—'}</td>
+        </tr>`).join('');
+
+    document.getElementById('previewTable').innerHTML = `
+        <table style="width:100%;border-collapse:collapse">
+            <thead><tr>
+                <th style="padding:8px 12px;text-align:left;color:#4b5563;font-size:10px;font-weight:700;background:#0f172a">#</th>
+                <th style="padding:8px 12px;text-align:left;color:#4b5563;font-size:10px;font-weight:700;background:#0f172a">ТОВАР</th>
+                <th style="padding:8px 12px;text-align:left;color:#4b5563;font-size:10px;font-weight:700;background:#0f172a">ЗАКУПОЧНАЯ ЦЕНА</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+        ${excelData.length > 5 ? `<div style="font-size:11px;color:#6b7280;padding:8px 0">...и ещё ${excelData.length-5} товаров</div>` : ''}
+    `;
+}
+
+async function startBatch() {
+    if (!currentUser) {
+        openAuthModal();
+        showMsg('Войдите для использования batch анализа', 'error');
+        return;
+    }
+
+    if (excelData.length === 0) return;
+
+    document.getElementById('excelPreview').style.display = 'none';
+    document.getElementById('batchProgress').style.display = 'block';
+    document.getElementById('batchResults').style.display = 'none';
+    batchResultsData = [];
+
+    const session = (await sb.auth.getSession()).data.session;
+    const token = session?.access_token || null;
+
+    // Анализируем по одному с прогрессом
+    for (let i = 0; i < excelData.length; i++) {
+        const item = excelData[i];
+        const pct = Math.round((i / excelData.length) * 100);
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressText').textContent = `Анализируем: ${item.query} (${i+1}/${excelData.length})`;
+
+        try {
+            const r = await fetch(`${API}/analyze`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({query: item.query, token: token})
+            });
+
+            if (r.status === 429) {
+                batchResultsData.push({...item, verdict: 'ЛИМИТ ИСЧЕРПАН', error: true});
+                break;
+            }
+
+            if (r.ok) {
+                const D = await r.json();
+                const ai = D.ai || {};
+                const stats = D.stats || {};
+
+                // Юнит-экономика если есть закупочная цена
+                let netProfit = 0, marginPct = 0, monthlyProfit30 = 0;
+                if (item.buy_price && ai.optimalPrice) {
+                    const sell = ai.optimalPrice;
+                    const commission = sell * 0.15;
+                    const tax = sell * 0.03;
+                    netProfit = sell - item.buy_price - commission - tax;
+                    marginPct = Math.round(netProfit / sell * 100);
+                    monthlyProfit30 = Math.round(netProfit * 30);
+                }
+
+                batchResultsData.push({
+                    query: item.query,
+                    buy_price: item.buy_price,
+                    verdict: ai.verdict || '—',
+                    niche_score: ai.nicheScore || 0,
+                    demand_score: ai.demandScore || 0,
+                    optimal_price: ai.optimalPrice || 0,
+                    avg_price: stats.avgPrice || 0,
+                    margin_pct: marginPct || ai.marginPct || 0,
+                    net_profit: netProfit || 0,
+                    monthly_profit: monthlyProfit30 || ai.monthlyProfit || 0,
+                    verdict_text: ai.verdictText || '',
+                    error: false
+                });
+            }
+        } catch(e) {
+            batchResultsData.push({...item, verdict: 'ОШИБКА', error: true});
+        }
+
+        // Пауза между запросами чтобы не перегружать
+        await new Promise(r => setTimeout(r, 1500));
+    }
+
+    document.getElementById('progressBar').style.width = '100%';
+    document.getElementById('progressText').textContent = 'Готово!';
+    setTimeout(() => {
+        document.getElementById('batchProgress').style.display = 'none';
+        showBatchResults();
+    }, 500);
+}
+
+function showBatchResults() {
+    document.getElementById('batchResults').style.display = 'block';
+
+    const rows = batchResultsData.map((item, i) => {
+        const vc = item.verdict === 'ВОЙТИ' ? '#10b981' : item.verdict === 'НЕ ВХОДИТЬ' ? '#ef4444' : '#f59e0b';
+        return `<tr>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.query}</td>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap">${item.buy_price ? fmt(item.buy_price)+' ₸' : '—'}</td>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;font-weight:700;color:${vc};white-space:nowrap">${item.verdict}</td>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap">${item.optimal_price ? fmt(item.optimal_price)+' ₸' : '—'}</td>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap;color:${item.margin_pct >= 25 ? '#10b981' : item.margin_pct >= 10 ? '#f59e0b' : '#ef4444'}">${item.margin_pct ? item.margin_pct+'%' : '—'}</td>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap;color:#10b981">${item.monthly_profit ? fmt(item.monthly_profit)+' ₸' : '—'}</td>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px">${item.niche_score || '—'}</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('batchResultsTable').innerHTML = `
+        <table style="width:100%;border-collapse:collapse;min-width:600px">
+            <thead><tr>
+                <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">ТОВАР</th>
+                <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">ЗАКУПКА</th>
+                <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">ВЕРДИКТ</th>
+                <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">ЦЕНА ПРОДАЖИ</th>
+                <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">МАРЖА</th>
+                <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">ПРИБЫЛЬ/МЕС</th>
+                <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">НИША</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+}
+
+function downloadResults() {
+    if (!batchResultsData.length) return;
+
+    const wsData = [
+        ['Товар', 'Закупочная цена', 'Вердикт', 'Оптим. цена продажи', 'Маржа %', 'Прибыль с ед.', 'Прибыль/мес (30 шт)', 'Скор ниши', 'Скор спроса', 'Рекомендация'],
+        ...batchResultsData.map(item => [
+            item.query,
+            item.buy_price || '',
+            item.verdict,
+            item.optimal_price || '',
+            item.margin_pct ? item.margin_pct + '%' : '',
+            item.net_profit || '',
+            item.monthly_profit || '',
+            item.niche_score || '',
+            item.demand_score || '',
+            item.verdict_text || ''
+        ])
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [{wch:30},{wch:15},{wch:12},{wch:18},{wch:10},{wch:15},{wch:18},{wch:12},{wch:12},{wch:50}];
+
+    // Цвет вердикта
+    XLSX.utils.book_append_sheet(wb, ws, 'Анализ');
+    XLSX.writeFile(wb, `marketanalyst_results_${new Date().toLocaleDateString('ru')}.xlsx`);
 }
 
 init();
