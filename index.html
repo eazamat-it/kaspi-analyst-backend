@@ -1109,19 +1109,27 @@ function showBatchResults() {
 
     const rows = batchResultsData.map((item, i) => {
         const vc = item.verdict === 'ВОЙТИ' ? '#10b981' : item.verdict === 'НЕ ВХОДИТЬ' ? '#ef4444' : '#f59e0b';
+        const vbg = item.verdict === 'ВОЙТИ' ? '#10b98120' : item.verdict === 'НЕ ВХОДИТЬ' ? '#ef444420' : '#f59e0b20';
+        const vborder = item.verdict === 'ВОЙТИ' ? '#10b98140' : item.verdict === 'НЕ ВХОДИТЬ' ? '#ef444440' : '#f59e0b40';
+        const icon = item.verdict === 'ВОЙТИ' ? '✅' : item.verdict === 'НЕ ВХОДИТЬ' ? '❌' : '⚠️';
+        const nicheColor = item.niche_score >= 70 ? '#10b981' : item.niche_score >= 40 ? '#f59e0b' : '#ef4444';
         return `<tr>
             <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.query}</td>
             <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap">${item.buy_price ? fmt(item.buy_price)+' ₸' : '—'}</td>
-            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;font-weight:700;color:${vc};white-space:nowrap">${item.verdict}</td>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;white-space:nowrap">
+                <div style="display:inline-flex;flex-direction:column;gap:2px;align-items:center">
+                    <span style="padding:3px 8px;background:${vbg};border:1px solid ${vborder};border-radius:20px;font-size:10px;font-weight:700;color:${vc}">${icon} ${item.verdict}</span>
+                    ${item.niche_score ? `<span style="font-size:9px;color:${nicheColor}">ниша ${item.niche_score}/100</span>` : ''}
+                </div>
+            </td>
             <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap">${item.optimal_price ? fmt(item.optimal_price)+' ₸' : '—'}</td>
-            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap;color:${item.margin_pct >= 25 ? '#10b981' : item.margin_pct >= 10 ? '#f59e0b' : '#ef4444'}">${item.margin_pct ? item.margin_pct+'%' : '—'}</td>
-            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap;color:#10b981">${item.monthly_profit ? fmt(item.monthly_profit)+' ₸' : '—'}</td>
-            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px">${item.niche_score || '—'}</td>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap;font-weight:700;color:${item.margin_pct >= 25 ? '#10b981' : item.margin_pct >= 10 ? '#f59e0b' : '#ef4444'}">${item.margin_pct ? item.margin_pct+'%' : '—'}</td>
+            <td style="padding:8px 10px;border-top:1px solid #1e2a3a;font-size:11px;white-space:nowrap;color:#10b981;font-weight:700">${item.monthly_profit ? fmt(item.monthly_profit)+' ₸' : '—'}</td>
         </tr>`;
     }).join('');
 
     document.getElementById('batchResultsTable').innerHTML = `
-        <table style="width:100%;border-collapse:collapse;min-width:600px">
+        <table style="width:100%;border-collapse:collapse;min-width:500px">
             <thead><tr>
                 <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">ТОВАР</th>
                 <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">ЗАКУПКА</th>
@@ -1129,7 +1137,6 @@ function showBatchResults() {
                 <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">ЦЕНА ПРОДАЖИ</th>
                 <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">МАРЖА</th>
                 <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">ПРИБЫЛЬ/МЕС</th>
-                <th style="padding:8px 10px;text-align:left;color:#4b5563;font-size:9px;font-weight:700;background:#0f172a">НИША</th>
             </tr></thead>
             <tbody>${rows}</tbody>
         </table>`;
