@@ -855,15 +855,13 @@ async function doAuth() {
         const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
         if(error){showMsg('Неверный email или пароль','error');document.getElementById('authBtn').textContent='Войти';return;}
         currentUser=data.user;closeAuthModal();renderUserBar();
-    }  } else {
-        // Проверяем формат email
+    } else {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             showMsg('Введите корректный email адрес', 'error');
             document.getElementById('authBtn').textContent='Зарегистрироваться';
             return;
         }
-
         const{data, error}=await sb.auth.signUp({email,password:pass});
         if(error){
             if(error.message.includes('already registered')) {
@@ -874,7 +872,6 @@ async function doAuth() {
             document.getElementById('authBtn').textContent='Зарегистрироваться';
             return;
         }
-        // Успех — показываем сообщение и закрываем через 3 секунды
         showMsg('✅ Письмо отправлено! Проверьте почту и подтвердите email.','success');
         document.getElementById('authBtn').textContent='Зарегистрироваться';
         setTimeout(() => { closeAuthModal(); }, 3000);
