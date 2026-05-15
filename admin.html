@@ -65,8 +65,8 @@ tr:hover td{background:#0f172a50}
       <h2 style="font-size:18px;font-weight:900;margin-bottom:6px">Вход в админку</h2>
       <p style="color:#6b7280;font-size:13px;margin-bottom:20px">Только для администратора</p>
       <div id="loginMsg"></div>
-      <input id="loginEmail" type="email" placeholder="Email" style="width:100%;margin-bottom:10px"/>
-      <input id="loginPass" type="password" placeholder="Пароль" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <input id="loginEmail" type="email" placeholder="Email" autocomplete="off" style="width:100%;margin-bottom:10px"/>
+<input id="loginPass" type="password" placeholder="Пароль" autocomplete="new-password" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()"/>
       <button onclick="doLogin()" style="width:100%;height:42px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;font-size:14px">Войти</button>
     </div>
   </div>
