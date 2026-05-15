@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarketAnalyst KZ — Админка</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060b14;color:#e2e8f0;font-family:'Segoe UI',sans-serif;min-height:100vh}
+button{cursor:pointer;border:none;font-weight:700;font-size:13px;font-family:'Segoe UI',sans-serif}
+input,select{background:#0f172a;border:1px solid #1e2a3a;border-radius:8px;color:#e2e8f0;font-size:13px;padding:0 12px;height:38px;outline:none;font-family:'Segoe UI',sans-serif}
+input:focus,select:focus{border-color:#f97316}
+.card{background:linear-gradient(145deg,#111827,#0f172a);border:1px solid #1e2a3a;border-radius:14px;padding:18px}
+.badge{border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;display:inline-block}
+.badge-free{background:#1e2a3a;color:#9ca3af}
+.badge-basic{background:#f9731620;color:#f97316;border:1px solid #f9731640}
+.badge-pro{background:#10b98120;color:#10b981;border:1px solid #10b98140}
+.badge-individual{background:#3b82f620;color:#3b82f6;border:1px solid #3b82f640}
+.badge-company{background:#8b5cf620;color:#8b5cf6;border:1px solid #8b5cf640}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;text-align:left;color:#4b5563;font-size:10px;font-weight:700;background:#0f172a;white-space:nowrap}
+td{padding:10px 14px;border-top:1px solid #1e2a3a;font-size:12px;vertical-align:middle}
+tr:hover td{background:#0f172a50}
+.btn-sm{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none}
+.btn-orange{background:#f97316;color:#fff}
+.btn-green{background:#10b981;color:#fff}
+.btn-red{background:#ef4444;color:#fff}
+.btn-gray{background:#1e2a3a;color:#9ca3af}
+.modal-overlay{position:fixed;inset:0;background:#000000bb;display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:#111827;border:1px solid #1e2a3a;border-radius:16px;padding:28px;width:100%;max-width:440px;margin:16px}
+.msg-success{background:#10b98120;border:1px solid #10b98140;color:#10b981;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
+.msg-error{background:#ef444420;border:1px solid #ef444440;color:#ef4444;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
+.stat-card{background:#060b14;border:1px solid #1e2a3a;border-radius:10px;padding:14px;text-align:center}
+</style>
+</head>
+<body>
+<div style="max-width:1200px;margin:0 auto;padding:16px">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;padding:12px 0;border-bottom:1px solid #1e2a3a">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff">M</div>
+    <span style="font-weight:900;font-size:18px;flex:1">Market<span style="color:#f97316">Analyst</span> <span style="color:#6b7280;font-size:13px">KZ — Админ панель</span></span>
+    <span id="adminEmail" style="font-size:12px;color:#6b7280"></span>
+    <button onclick="logout()" style="padding:6px 14px;background:#1e2a3a;color:#9ca3af;border-radius:8px;font-size:12px">Выйти</button>
+  </div>
+
+  <!-- Auth check -->
+  <div id="authCheck" style="text-align:center;padding:60px">
+    <div style="font-size:32px;margin-bottom:12px">🔐</div>
+    <div style="color:#6b7280">Проверяем доступ...</div>
+  </div>
+
+  <!-- Access denied -->
+  <div id="accessDenied" style="display:none;text-align:center;padding:60px">
+    <div style="font-size:48px;margin-bottom:12px">🚫</div>
+    <div style="font-size:18px;font-weight:700;color:#ef4444;margin-bottom:8px">Доступ запрещён</div>
+    <div style="color:#6b7280;margin-bottom:20px">Эта страница только для администратора</div>
+    <a href="/" style="padding:10px 24px;background:#f97316;color:#fff;border-radius:8px;font-weight:700;text-decoration:none">← На главную</a>
+  </div>
+
+  <!-- Login form -->
+  <div id="loginForm" style="display:none;max-width:380px;margin:60px auto">
+    <div class="card">
+      <h2 style="font-size:18px;font-weight:900;margin-bottom:6px">Вход в админку</h2>
+      <p style="color:#6b7280;font-size:13px;margin-bottom:20px">Только для администратора</p>
+      <div id="loginMsg"></div>
+      <input id="loginEmail" type="email" placeholder="Email" style="width:100%;margin-bottom:10px"/>
+      <input id="loginPass" type="password" placeholder="Пароль" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button onclick="doLogin()" style="width:100%;height:42px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:10px;font-size:14px">Войти</button>
+    </div>
+  </div>
+
+  <!-- Admin content -->
+  <div id="adminContent" style="display:none">
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="statsGrid">
+      <div class="stat-card">
+        <div style="font-size:10px;color:#4b5563;margin-bottom:6px">ВСЕГО ПОЛЬЗОВАТЕЛЕЙ</div>
+        <div style="font-size:28px;font-weight:900;color:#f97316" id="statTotal">—</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size:10px;color:#4b5563;margin-bottom:6px">БЕСПЛАТНЫХ</div>
+        <div style="font-size:28px;font-weight:900;color:#9ca3af" id="statFree">—</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size:10px;color:#4b5563;margin-bottom:6px">БАЗОВЫЙ</div>
+        <div style="font-size:28px;font-weight:900;color:#f97316" id="statBasic">—</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size:10px;color:#4b5563;margin-bottom:6px">ПРО</div>
+        <div style="font-size:28px;font-weight:900;color:#10b981" id="statPro">—</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input id="searchInput" placeholder="Поиск по email..." style="flex:1;min-width:200px" oninput="filterUsers()"/>
+        <select id="planFilter" onchange="filterUsers()" style="width:140px">
+          <option value="">Все тарифы</option>
+          <option value="free">Бесплатный</option>
+          <option value="basic">Базовый</option>
+          <option value="pro">Про</option>
+        </select>
+        <select id="typeFilter" onchange="filterUsers()" style="width:160px">
+          <option value="">Все типы</option>
+          <option value="individual">Физ. лицо</option>
+          <option value="company">Юр. лицо</option>
+        </select>
+        <button onclick="loadUsers()" style="padding:0 16px;height:38px;background:#1e2a3a;color:#9ca3af;border-radius:8px">🔄 Обновить</button>
+      </div>
+    </div>
+
+    <!-- Users table -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:#6b7280">👥 ПОЛЬЗОВАТЕЛИ</div>
+        <span id="usersCount" style="font-size:11px;color:#4b5563"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>EMAIL</th>
+              <th>ТИП</th>
+              <th>КОМПАНИЯ</th>
+              <th>ТАРИФ</th>
+              <th>АНАЛИЗОВ</th>
+              <th>ДАТА РЕГ.</th>
+              <th>ДЕЙСТВИЯ</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="7" style="text-align:center;padding:30px;color:#4b5563">Загружаем...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2 style="font-size:17px;font-weight:900;margin-bottom:16px">✏️ Редактировать пользователя</h2>
+    <div id="editMsg"></div>
+    <input type="hidden" id="editUserId"/>
+
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Email</label>
+      <input id="editEmail" type="email" style="width:100%" disabled/>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Тип пользователя</label>
+      <select id="editUserType" style="width:100%">
+        <option value="individual">Физическое лицо</option>
+        <option value="company">Юридическое лицо</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Название компании (для юр. лица)</label>
+      <input id="editCompany" type="text" placeholder="ТОО Ромашка" style="width:100%"/>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Тариф</label>
+      <select id="editPlan" style="width:100%">
+        <option value="free">Бесплатный (3 запроса/день)</option>
+        <option value="basic">Базовый (50 запросов/день)</option>
+        <option value="pro">Про (безлимит)</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:6px">Телефон</label>
+      <input id="editPhone" type="text" placeholder="+7 777 123 4567" style="width:100%"/>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="saveUser()" style="flex:1;height:40px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-radius:8px">💾 Сохранить</button>
+      <button onclick="closeEditModal()" style="flex:1;height:40px;background:#1e2a3a;color:#9ca3af;border-radius:8px">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://kbdrjwvbkdbhjokyqlzy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_H464vwbrdU4BKP14YtYkLg_J7rjRkBO';
+const ADMIN_EMAIL = 'eazamat2023@gmail.com';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let allUsers = [];
+let currentUser = null;
+
+async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+
+    if (!session) {
+        document.getElementById('authCheck').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'block';
+        return;
+    }
+
+    currentUser = session.user;
+
+    // Проверяем is_admin в profiles
+    const { data: profile } = await sb.from('profiles')
+        .select('is_admin, email')
+        .eq('id', currentUser.id)
+        .single();
+
+    document.getElementById('authCheck').style.display = 'none';
+
+    if (!profile?.is_admin || currentUser.email !== ADMIN_EMAIL) {
+        document.getElementById('accessDenied').style.display = 'block';
+        return;
+    }
+
+    document.getElementById('adminEmail').textContent = currentUser.email;
+    document.getElementById('adminContent').style.display = 'block';
+    await loadUsers();
+}
+
+async function doLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    if (!email || !pass) return;
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) {
+        document.getElementById('loginMsg').innerHTML = '<div class="msg-error">Неверный email или пароль</div>';
+        return;
+    }
+    if (data.user.email !== ADMIN_EMAIL) {
+        await sb.auth.signOut();
+        document.getElementById('loginMsg').innerHTML = '<div class="msg-error">Доступ запрещён</div>';
+        return;
+    }
+    window.location.reload();
+}
+
+async function loadUsers() {
+    document.getElementById('usersTableBody').innerHTML =
+        '<tr><td colspan="7" style="text-align:center;padding:20px;color:#4b5563">Загружаем...</td></tr>';
+
+    const { data: profiles, error } = await sb.from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error || !profiles) {
+        document.getElementById('usersTableBody').innerHTML =
+            '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444">Ошибка загрузки</td></tr>';
+        return;
+    }
+
+    // Загружаем количество анализов для каждого
+    const { data: historyCounts } = await sb.from('search_history')
+        .select('user_id');
+
+    const countMap = {};
+    if (historyCounts) {
+        historyCounts.forEach(h => {
+            countMap[h.user_id] = (countMap[h.user_id] || 0) + 1;
+        });
+    }
+
+    allUsers = profiles.map(p => ({ ...p, analysisCount: countMap[p.id] || 0 }));
+    updateStats();
+    renderUsers(allUsers);
+}
+
+function updateStats() {
+    document.getElementById('statTotal').textContent = allUsers.length;
+    document.getElementById('statFree').textContent = allUsers.filter(u => u.plan === 'free' || !u.plan).length;
+    document.getElementById('statBasic').textContent = allUsers.filter(u => u.plan === 'basic').length;
+    document.getElementById('statPro').textContent = allUsers.filter(u => u.plan === 'pro').length;
+}
+
+function filterUsers() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const plan = document.getElementById('planFilter').value;
+    const type = document.getElementById('typeFilter').value;
+
+    const filtered = allUsers.filter(u => {
+        const matchSearch = !search || (u.email || '').toLowerCase().includes(search) || (u.company_name || '').toLowerCase().includes(search);
+        const matchPlan = !plan || u.plan === plan || (!u.plan && plan === 'free');
+        const matchType = !type || u.user_type === type || (!u.user_type && type === 'individual');
+        return matchSearch && matchPlan && matchType;
+    });
+
+    renderUsers(filtered);
+}
+
+function renderUsers(users) {
+    document.getElementById('usersCount').textContent = `${users.length} пользователей`;
+
+    if (!users.length) {
+        document.getElementById('usersTableBody').innerHTML =
+            '<tr><td colspan="7" style="text-align:center;padding:30px;color:#4b5563">Пользователи не найдены</td></tr>';
+        return;
+    }
+
+    document.getElementById('usersTableBody').innerHTML = users.map(u => {
+        const plan = u.plan || 'free';
+        const userType = u.user_type || 'individual';
+        const planBadge = plan === 'pro'
+            ? '<span class="badge badge-pro">ПРО</span>'
+            : plan === 'basic'
+            ? '<span class="badge badge-basic">БАЗОВЫЙ</span>'
+            : '<span class="badge badge-free">FREE</span>';
+        const typeBadge = userType === 'company'
+            ? '<span class="badge badge-company">Юр. лицо</span>'
+            : '<span class="badge badge-individual">Физ. лицо</span>';
+        const date = u.created_at ? new Date(u.created_at).toLocaleDateString('ru-KZ') : '—';
+        const isAdmin = u.is_admin ? '👑 ' : '';
+
+        return `<tr>
+            <td style="max-width:200px">
+                <div style="font-weight:600">${isAdmin}${u.email || '—'}</div>
+                ${u.phone ? `<div style="font-size:10px;color:#6b7280">${u.phone}</div>` : ''}
+            </td>
+            <td>${typeBadge}</td>
+            <td style="color:#9ca3af;font-size:11px">${u.company_name || '—'}</td>
+            <td>${planBadge}</td>
+            <td style="text-align:center;font-weight:700;color:#f97316">${u.analysisCount}</td>
+            <td style="color:#6b7280">${date}</td>
+            <td>
+                <div style="display:flex;gap:6px">
+                    <button class="btn-sm btn-orange" onclick="openEditModal('${u.id}')">✏️ Изменить</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function openEditModal(userId) {
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    document.getElementById('editUserId').value = userId;
+    document.getElementById('editEmail').value = user.email || '';
+    document.getElementById('editUserType').value = user.user_type || 'individual';
+    document.getElementById('editCompany').value = user.company_name || '';
+    document.getElementById('editPlan').value = user.plan || 'free';
+    document.getElementById('editPhone').value = user.phone || '';
+    document.getElementById('editMsg').innerHTML = '';
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+async function saveUser() {
+    const userId = document.getElementById('editUserId').value;
+    const userType = document.getElementById('editUserType').value;
+    const company = document.getElementById('editCompany').value.trim();
+    const plan = document.getElementById('editPlan').value;
+    const phone = document.getElementById('editPhone').value.trim();
+
+    const { error } = await sb.from('profiles').update({
+        user_type: userType,
+        company_name: company || null,
+        plan: plan,
+        phone: phone || null,
+        daily_limit: plan === 'pro' ? 999999 : plan === 'basic' ? 50 : 3
+    }).eq('id', userId);
+
+    if (error) {
+        document.getElementById('editMsg').innerHTML = `<div class="msg-error">Ошибка: ${error.message}</div>`;
+        return;
+    }
+
+    document.getElementById('editMsg').innerHTML = '<div class="msg-success">✅ Сохранено!</div>';
+    setTimeout(() => { closeEditModal(); loadUsers(); }, 1000);
+}
+
+async function logout() {
+    await sb.auth.signOut();
+    window.location.reload();
+}
+
+// Close modal on overlay click
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+
+init();
+</script>
+</body>
+</html>
