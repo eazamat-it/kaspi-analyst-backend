@@ -14,7 +14,7 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # service_role key (с
 
 # Лимиты по тарифам
 PLAN_LIMITS = {
-    "free": 3,
+    "free": 999,
     "basic": 50,
     "pro": 999999,
 }
