@@ -382,7 +382,7 @@ async function saveUser() {
 
 async function logout() {
     await sb.auth.signOut();
-    window.location.reload();
+    window.location.href = '/';
 }
 
 // Close modal on overlay click
