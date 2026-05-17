@@ -623,7 +623,8 @@ function calcUpdate() {
             <span class="calc-label">Окупаемость партии</span>
             <span class="calc-value">${breakEven} шт</span>
         </div>
-        <div class="calc-verdict ${verdictClass}">${verdictText}</div>
+       <div class="calc-verdict ${verdictClass}">${verdictText}</div>
+${ai?.analysis?.recommendations?`<div style="font-size:12px;color:#9ca3af;margin-top:12px">${ai.analysis.recommendations.slice(0,3).map((r,i)=>`<div style="margin-bottom:6px">• ${r}</div>`).join('')}</div>`:''}
     `;
 
     // Advice
