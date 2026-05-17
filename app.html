@@ -905,8 +905,8 @@ function scoreBar(label,value,invert=false){
 function renderResult(tabId){
     if(!D)return;
     const stats=D.stats||{},competitors=Array.isArray(D.competitors)?D.competitors:[],ai=D.ai||{};
-    const hasAI=ai&&!ai.error&&typeof ai.verdict==='string'&&ai.verdict.length>0;
-    const verdict=hasAI?ai.verdict:'—',verdictText=hasAI?(ai.verdictText||''):'AI-анализ недоступен.';
+  const hasAI=ai&&!ai.error&&(ai.verdict||ai.analysis);
+   const verdict=hasAI?(ai.verdict||'АНАЛИЗ'):'—',verdictText=hasAI?(ai.verdictText||ai.analysis?.market_viability?.interpretation||'Анализ доступен'):'Анализ недоступен';
     const vc=verdict==='ВОЙТИ'?'#10b981':verdict==='НЕ ВХОДИТЬ'?'#ef4444':'#f59e0b';
     const nicheScore=Number(hasAI?(ai.nicheScore??stats.nicheScore??0):(stats.nicheScore??0));
     const demandScore=Number(hasAI?(ai.demandScore??stats.demandScore??0):(stats.demandScore??0));
