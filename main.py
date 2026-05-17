@@ -3,9 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import httpx
 import json
+import re
 import os
 import random
 import asyncio
+import math
 from datetime import date
 from bs4 import BeautifulSoup
 
@@ -65,78 +67,272 @@ async def parse_kaspi(query: str) -> list[dict]:
     Парсит реальные товары с Kaspi.kz через прокси.
     Возвращает список товаров с реальными ценами и отзывами.
     """
-    proxy = get_random_proxy()
-    url = f"https://kaspi.kz/shop/search/?text={query}&page=0"
+    all_products = []
+    seen_ids = set()
+    pages_to_fetch = [0, 1, 2]  # 3 страницы = ~36 товаров
 
+    async with httpx.AsyncClient(
+        proxy=get_random_proxy(),
+        timeout=25.0,
+        follow_redirects=True
+    ) as client:
+        for page in pages_to_fetch:
+            if len(all_products) >= 36:
+                break
+
+            url = f"https://kaspi.kz/shop/search/?text={query}&page={page}"
+
+            try:
+                await asyncio.sleep(random.uniform(1.5, 3.0))
+                r = await client.get(url, headers=get_headers())
+
+                if r.status_code != 200:
+                    print(f"Kaspi вернул статус {r.status_code} на странице {page}")
+                    break
+
+                products = _extract_products_from_html(r.text, seen_ids)
+                if not products:
+                    print(f"Страница {page}: товары не найдены, останавливаем")
+                    break
+
+                all_products.extend(products)
+                print(f"Страница {page}: +{len(products)} товаров (всего {len(all_products)})")
+
+            except Exception as e:
+                print(f"Ошибка на странице {page}: {e}")
+                break
+
+    print(f"Итого спарсили {len(all_products)} товаров для '{query}'")
+    return all_products
+
+
+def _extract_products_from_html(html: str, seen_ids: set) -> list[dict]:
+    """
+    Kaspi — SPA, все данные встроены в <script> как window.__initial_state__.
+    Извлекаем JSON оттуда, это даёт реальные отзывы, рейтинги, продавцов.
+    Если JSON не найден — падаем на HTML-парсинг как запасной вариант.
+    """
+    products = []
+
+    # --- Способ 1: window.__initial_state__ или похожий JSON в <script> ---
     try:
-        await asyncio.sleep(random.uniform(2, 4))  # задержка чтобы не банили
+        # Kaspi кладёт данные примерно так:
+        # window.__initial_state__={"searchResults":{"cards":[...]}}
+        # или DATA_LAYER, или __NEXT_DATA__
+        patterns = [
+            r'window\.__initial_state__\s*=\s*(\{.+?\});\s*(?:window|</script>)',
+            r'window\.__DATA__\s*=\s*(\{.+?\});\s*(?:window|</script>)',
+            r'<script id="__NEXT_DATA__"[^>]*>(\{.+?\})</script>',
+        ]
+        for pattern in patterns:
+            m = re.search(pattern, html, re.DOTALL)
+            if m:
+                raw = m.group(1)
+                data = json.loads(raw)
+                extracted = _parse_initial_state(data, seen_ids)
+                if extracted:
+                    return extracted
 
-        async with httpx.AsyncClient(
-            proxy=proxy,
-            timeout=20.0,
-            follow_redirects=True
-        ) as client:
-            r = await client.get(url, headers=get_headers())
-
-            if r.status_code != 200:
-                print(f"Kaspi вернул статус {r.status_code}")
-                return []
-
-            soup = BeautifulSoup(r.text, "html.parser")
-            products = []
-
-            # Парсим карточки товаров
-            cards = soup.select(".item-card") or soup.select("[data-id]") or soup.select(".product-card")
-
-            for card in cards[:20]:  # берём первые 20 товаров
-                try:
-                    # Название
-                    name_el = card.select_one(".item-card__name a") or card.select_one(".product-name") or card.select_one("a[data-product-name]")
-                    name = name_el.get_text(strip=True) if name_el else ""
-
-                    # Цена
-                    price_el = card.select_one(".item-card__prices-price") or card.select_one(".price") or card.select_one("[data-price]")
-                    price_text = price_el.get_text(strip=True) if price_el else "0"
-                    price = int("".join(filter(str.isdigit, price_text))) if price_text else 0
-
-                    # Отзывы
-                    reviews_el = card.select_one(".item-card__rating-count") or card.select_one(".reviews-count")
-                    reviews_text = reviews_el.get_text(strip=True) if reviews_el else "0"
-                    reviews = int("".join(filter(str.isdigit, reviews_text))) if reviews_text else 0
-
-                    # Рейтинг
-                    rating_el = card.select_one(".item-card__rating .rating__star-count") or card.select_one("[data-rating]")
-                    rating = float(rating_el.get_text(strip=True)) if rating_el else 0.0
-
-                    # Продавец
-                    seller_el = card.select_one(".item-card__seller") or card.select_one(".seller-name")
-                    seller = seller_el.get_text(strip=True) if seller_el else "Неизвестно"
-
-                    # Ссылка
-                    link_el = card.select_one("a[href*='/p/']") or card.select_one("a")
-                    href = link_el.get("href", "") if link_el else ""
-                    link = f"https://kaspi.kz{href}" if href.startswith("/") else href
-
-                    if name and price > 0:
-                        products.append({
-                            "name": name,
-                            "price": price,
-                            "reviews": reviews,
-                            "rating": rating,
-                            "seller": seller,
-                            "url": link,
-                            "inStock": True
-                        })
-                except Exception as e:
-                    print(f"Ошибка парсинга карточки: {e}")
-                    continue
-
-            print(f"Спарсили {len(products)} товаров для '{query}'")
-            return products
+        # Kaspi также встраивает данные как отдельный JSON-массив карточек
+        # ищем "cards" или "products" массив внутри любого <script>
+        cards_match = re.search(
+            r'"cards"\s*:\s*(\[.+?\])\s*[,}]',
+            html, re.DOTALL
+        )
+        if cards_match:
+            cards_json = json.loads(cards_match.group(1))
+            for item in cards_json:
+                product = _parse_card_json(item, seen_ids)
+                if product:
+                    products.append(product)
+            if products:
+                return products
 
     except Exception as e:
-        print(f"Ошибка парсинга Kaspi: {e}")
-        return []
+        print(f"JSON-парсинг не удался: {e}")
+
+    # --- Способ 2: HTML data-атрибуты (запасной) ---
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Kaspi кладёт данные в data-атрибуты на карточках
+        cards = (
+            soup.select("div[data-product-id]") or
+            soup.select("div[data-id]") or
+            soup.select(".item-card") or
+            soup.select(".product-card")
+        )
+
+        for card in cards:
+            try:
+                prod_id = card.get("data-product-id") or card.get("data-id") or ""
+                if prod_id and prod_id in seen_ids:
+                    continue
+
+                name_el = (
+                    card.select_one("a.item-card__name-link") or
+                    card.select_one(".item-card__name a") or
+                    card.select_one("[data-product-name]") or
+                    card.select_one("a[href*='/p/']")
+                )
+                name = name_el.get_text(strip=True) if name_el else ""
+
+                price_el = (
+                    card.select_one(".item-card__prices-price") or
+                    card.select_one("[data-price]") or
+                    card.select_one(".price__value")
+                )
+                price_text = price_el.get_text(strip=True) if price_el else "0"
+                price = int("".join(filter(str.isdigit, price_text))) if price_text else 0
+
+                # Отзывы — Kaspi пишет "(1 234)" рядом со звёздами
+                reviews_el = (
+                    card.select_one(".item-card__rating-count") or
+                    card.select_one(".rating__reviews-count") or
+                    card.select_one("[data-reviews-quantity]")
+                )
+                if reviews_el:
+                    rev_text = "".join(filter(str.isdigit, reviews_el.get_text()))
+                    reviews = int(rev_text) if rev_text else 0
+                else:
+                    # data-атрибут напрямую
+                    reviews = int(card.get("data-reviews-quantity", 0) or 0)
+
+                # Рейтинг
+                rating_el = card.select_one("[data-rating]")
+                if rating_el:
+                    try:
+                        rating = float(rating_el.get("data-rating", 0))
+                    except:
+                        rating = 0.0
+                else:
+                    star_el = card.select_one(".rating__star-count")
+                    try:
+                        rating = float(star_el.get_text(strip=True)) if star_el else 0.0
+                    except:
+                        rating = 0.0
+
+                seller_el = (
+                    card.select_one(".item-card__seller-name") or
+                    card.select_one(".merchants-name") or
+                    card.select_one("[data-seller-name]")
+                )
+                seller = seller_el.get_text(strip=True) if seller_el else "Неизвестно"
+
+                link_el = card.select_one("a[href*='/p/']") or card.select_one("a")
+                href = link_el.get("href", "") if link_el else ""
+                link = f"https://kaspi.kz{href}" if href.startswith("/") else href
+
+                if name and price > 0:
+                    if prod_id:
+                        seen_ids.add(prod_id)
+                    products.append({
+                        "name": name,
+                        "price": price,
+                        "reviews": reviews,
+                        "rating": rating,
+                        "seller": seller,
+                        "url": link,
+                        "inStock": True
+                    })
+
+            except Exception as e:
+                print(f"Ошибка парсинга карточки: {e}")
+                continue
+
+    except Exception as e:
+        print(f"HTML-парсинг не удался: {e}")
+
+    return products
+
+
+def _parse_initial_state(data: dict, seen_ids: set) -> list[dict]:
+    """Рекурсивно ищем массив карточек в window.__initial_state__"""
+    products = []
+
+    def find_cards(obj, depth=0):
+        if depth > 6 or not isinstance(obj, (dict, list)):
+            return
+        if isinstance(obj, list):
+            # Если элементы похожи на карточки товаров
+            if obj and isinstance(obj[0], dict) and any(
+                k in obj[0] for k in ("id", "productId", "reviewsQuantity", "unitPrice")
+            ):
+                for item in obj:
+                    p = _parse_card_json(item, seen_ids)
+                    if p:
+                        products.append(p)
+                return
+            for item in obj:
+                find_cards(item, depth + 1)
+        elif isinstance(obj, dict):
+            for v in obj.values():
+                find_cards(v, depth + 1)
+
+    find_cards(data)
+    return products
+
+
+def _parse_card_json(item: dict, seen_ids: set) -> dict | None:
+    """Парсим одну карточку из JSON (window.__initial_state__ или data-атрибуты)"""
+    try:
+        prod_id = str(item.get("id") or item.get("productId") or item.get("skuId") or "")
+        if prod_id and prod_id in seen_ids:
+            return None
+
+        name = (
+            item.get("name") or item.get("title") or
+            item.get("productName") or item.get("fullName") or ""
+        )
+
+        # Цена может быть в разных полях
+        price = int(
+            item.get("unitPrice") or item.get("price") or
+            item.get("minPrice") or item.get("priceMin") or 0
+        )
+
+        # Отзывы — ключевое поле которое раньше терялось
+        reviews = int(
+            item.get("reviewsQuantity") or item.get("reviewCount") or
+            item.get("reviews") or item.get("ratingsCount") or 0
+        )
+
+        # Рейтинг
+        try:
+            rating = float(
+                item.get("rating") or item.get("averageRating") or
+                item.get("reviewRating") or 0
+            )
+        except:
+            rating = 0.0
+
+        # Продавец
+        seller = (
+            item.get("shopName") or item.get("merchantName") or
+            item.get("sellerName") or item.get("merchantTitle") or "Неизвестно"
+        )
+        if isinstance(seller, dict):
+            seller = seller.get("name") or seller.get("title") or "Неизвестно"
+
+        # Ссылка
+        slug = item.get("slug") or item.get("url") or ""
+        link = f"https://kaspi.kz/shop/p/{slug}" if slug and not slug.startswith("http") else slug
+
+        if name and price > 0:
+            if prod_id:
+                seen_ids.add(prod_id)
+            return {
+                "name": name,
+                "price": price,
+                "reviews": reviews,
+                "rating": rating,
+                "seller": seller,
+                "url": link,
+                "inStock": True
+            }
+    except Exception as e:
+        print(f"Ошибка _parse_card_json: {e}")
+    return None
 
 def calculate_stats(products: list[dict]) -> dict:
     """Считаем реальную статистику из спарсенных товаров"""
@@ -145,29 +341,62 @@ def calculate_stats(products: list[dict]) -> dict:
 
     prices = [p["price"] for p in products if p["price"] > 0]
     reviews = [p["reviews"] for p in products]
+    ratings = [p["rating"] for p in products if p.get("rating", 0) > 0]
 
     avg_price = int(sum(prices) / len(prices)) if prices else 0
     min_price = min(prices) if prices else 0
     max_price = max(prices) if prices else 0
     total_reviews = sum(reviews)
     avg_reviews = int(total_reviews / len(reviews)) if reviews else 0
+    avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else 0.0
 
-    # Считаем конкуренцию (0-100)
-    competition_score = min(100, len(products) * 5)
+    # Разброс цен — показатель насыщенности ниши
+    price_spread_pct = int((max_price - min_price) / avg_price * 100) if avg_price > 0 else 0
 
-    # Считаем спрос по отзывам (0-100)
-    demand_score = min(100, int(avg_reviews / 10)) if avg_reviews else 20
+    # --- competitionScore (0-100) ---
+    # Считаем уникальных продавцов
+    unique_sellers = len(set(p.get("seller", "") for p in products if p.get("seller", "") not in ("", "Неизвестно")))
+    seller_count = unique_sellers if unique_sellers > 0 else len(products)
 
-    # Считаем нишевый скор
-    niche_score = max(0, 100 - competition_score + demand_score) // 2
+    # Логарифмическая шкала: 1 продавец → ~0, 5 → ~40, 10 → ~60, 20+ → ~85
+    seller_factor = min(85, int(math.log1p(seller_count) / math.log1p(20) * 85))
+
+    # Чем больше отзывов у топов — тем сложнее войти
+    top_reviews = sorted(reviews, reverse=True)[:3]
+    avg_top_reviews = sum(top_reviews) / len(top_reviews) if top_reviews else 0
+    # log шкала: 10 отзывов → ~8, 100 → ~15, 1000 → ~15 (cap)
+    barrier_factor = min(15, int(math.log1p(avg_top_reviews) / math.log1p(1000) * 15))
+
+    competition_score = min(100, seller_factor + barrier_factor)
+
+    # --- demandScore (0-100) ---
+    # Логарифмическая шкала по avg_reviews:
+    # 0 отз → 10, 10 → 30, 100 → 55, 500 → 75, 2000+ → 95
+    if avg_reviews == 0:
+        demand_score = 10
+    else:
+        demand_score = min(95, int(math.log1p(avg_reviews) / math.log1p(2000) * 85) + 10)
+
+    # Поправка на рейтинг: высокий рейтинг = подтверждённый спрос (+5 макс)
+    rating_bonus = int((avg_rating - 3.0) * 2.5) if avg_rating >= 3.0 else 0
+    demand_score = min(100, demand_score + rating_bonus)
+
+    # --- nicheScore (0-100) ---
+    # Формула: высокий спрос + низкая конкуренция = хорошая ниша
+    # Дополнительный бонус если разброс цен большой (есть место для нового предложения)
+    spread_bonus = min(10, price_spread_pct // 10)
+    niche_score = min(100, max(0, int(demand_score * 0.6 + (100 - competition_score) * 0.4) + spread_bonus))
 
     return {
         "totalFound": len(products),
         "avgPrice": avg_price,
         "minPrice": min_price,
         "maxPrice": max_price,
+        "priceSpreadPct": price_spread_pct,
         "totalReviews": total_reviews,
         "avgReviews": avg_reviews,
+        "avgRating": avg_rating,
+        "uniqueSellers": seller_count,
         "nicheScore": niche_score,
         "competitionScore": competition_score,
         "demandScore": demand_score,
@@ -363,18 +592,47 @@ async def analyze(body: dict, request: Request):
 Сделай анализ на основе общих знаний о казахстанском рынке, но обязательно укажи в verdictText что данные приблизительные.
 """
 
+    # Уже посчитанные скоры — Claude их не должен менять
+    niche_score_calc = real_stats.get("nicheScore", 0) if real_stats else 0
+    demand_score_calc = real_stats.get("demandScore", 0) if real_stats else 0
+    competition_score_calc = real_stats.get("competitionScore", 0) if real_stats else 0
+    avg_price_calc = real_stats.get("avgPrice", 0) if real_stats else 0
+    price_spread_calc = real_stats.get("priceSpreadPct", 0) if real_stats else 0
+    unique_sellers_calc = real_stats.get("uniqueSellers", 0) if real_stats else 0
+    avg_rating_calc = real_stats.get("avgRating", 0) if real_stats else 0
+
+    scores_hint = f"""
+УЖЕ ПОСЧИТАННЫЕ СКОРЫ (используй именно эти значения, не меняй):
+- nicheScore: {niche_score_calc}
+- demandScore: {demand_score_calc}
+- competitionScore: {competition_score_calc}
+- avgPrice: {avg_price_calc} тенге
+- priceSpreadPct: {price_spread_calc}% (разброс цен)
+- uniqueSellers: {unique_sellers_calc}
+- avgRating: {avg_rating_calc}
+""" if real_stats else ""
+
     prompt = f"""Ты эксперт по маркетплейсу Kaspi.kz (Казахстан). Проанализируй нишу "{query}".
 
 {data_section}
+{scores_hint}
+
+Твоя задача — посчитать ТОЛЬКО финансовые показатели и дать текстовый анализ.
+
+Для marginPct: казахстанский маркетплейс, типичная маржа 15-40%. Оцени по категории товара.
+Для optimalPrice: рекомендуй цену входа — чуть ниже avgPrice если конкуренция высокая, чуть выше если товар качественнее.
+Для monthlyProfit: оцени реалистично (продажи 20-100 шт/мес для новичка * маржа в тенге).
+Для breakEvenUnits: сколько единиц нужно продать чтобы окупить первую закупку (считай от avgPrice * 0.6 как себестоимость).
+Для marginScore: оцени привлекательность маржи в этой категории (0-100).
 
 Верни ТОЛЬКО валидный JSON без пояснений и без markdown:
 {{
   "verdict": "ВОЙТИ или ОСТОРОЖНО или НЕ ВХОДИТЬ",
   "verdictText": "2-3 предложения с обоснованием на основе реальных данных",
-  "nicheScore": 0,
-  "demandScore": 0,
+  "nicheScore": {niche_score_calc},
+  "demandScore": {demand_score_calc},
   "marginScore": 0,
-  "competitionScore": 0,
+  "competitionScore": {competition_score_calc},
   "optimalPrice": 0,
   "marginPct": 0,
   "monthlyProfit": 0,
@@ -385,7 +643,8 @@ async def analyze(body: dict, request: Request):
   "keywords": ["ключевое слово 1", "ключевое слово 2", "ключевое слово 3"]
 }}
 
-Все скоры от 0 до 100. Цены в тенге. Анализируй на основе предоставленных реальных данных."""
+nicheScore, demandScore, competitionScore — вставь значения из блока выше без изменений.
+Все цены в тенге. Анализируй на основе предоставленных реальных данных."""
 
     try:
         async with httpx.AsyncClient(timeout=45.0) as client:
