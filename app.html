@@ -925,7 +925,8 @@ function renderResult(tabId){
             <span style="font-size:22px;font-weight:900;color:${vc}">${verdict}</span>
             <button onclick="switchMainTab('calc')" style="padding:6px 14px;background:#f9731620;color:#f97316;border:1px solid #f9731640;border-radius:8px;font-size:11px">🧮 Рассчитать экономику →</button>
         </div>
-        <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
+         <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
+        ${ai?.analysis?.recommendations?`<div style="font-size:12px;color:#9ca3af;margin-top:12px;border-top:1px solid #1e2a3a;padding-top:12px">${ai.analysis.recommendations.slice(0,3).map((r,i)=>`<div style="margin-bottom:6px">• ${r}</div>`).join('')}</div>`:''}
     </div>
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:15px" class="stats-grid">
         <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТОВАРОВ В НИШЕ</div><div style="font-size:22px;font-weight:900;color:#f97316">${stats.totalFound??0}</div></div>
