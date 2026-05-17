@@ -928,7 +928,7 @@ function renderResult(tabId){
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:15px" class="stats-grid">
         <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТОВАРОВ В НИШЕ</div><div style="font-size:22px;font-weight:900;color:#f97316">${stats.totalFound??0}</div></div>
         <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">СРЕДНЯЯ ЦЕНА</div><div style="font-size:18px;font-weight:900">${fmt(stats.avgPrice)} ₸</div></div>
-        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ВСЕГО ОТЗЫВОВ</div><div style="font-size:18px;font-weight:900">${fmt(stats.totalReviews)}</div></div>
+        <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">КОНКУРЕНЦИЯ</div><div style="font-size:18px;font-weight:900">${fmt(stats.totalReviews)}</div></div>
         <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ОПТИМ. ЦЕНА</div><div style="font-size:18px;font-weight:900;color:#10b981">${optimalPrice}</div></div>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:15px">
