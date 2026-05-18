@@ -41,9 +41,9 @@
         .loader { display: none; text-align: center; padding: 20px; }
         .spinner { border: 3px solid #1e2a3a; border-top: 3px solid #f97316; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .alternatives { margin-top: 20px; padding-top: 20px; border-top: 1px solid #1e2a3a; }
         .alt-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e2a3a; font-size: 13px; }
         .alt-price { color: #f97316; font-weight: 600; }
+        .similarity-badge { display: inline-block; background: #1e2a3a; color: #9ca3af; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; }
     </style>
 </head>
 <body>
@@ -60,12 +60,16 @@
             <div class="card">
                 <h2>🔍 Поиск товара</h2>
                 <div class="form-group">
-                    <label>Название товара</label>
-                    <input type="text" id="product_name" placeholder="Corsair мышка Gaming">
+                    <label>Название товара (точное)</label>
+                    <input type="text" id="product_name" placeholder="Corsair M55 RGB">
                 </div>
                 <div class="form-group">
                     <label>Закупочная цена (₸)</label>
                     <input type="number" id="cost_price" placeholder="10000">
+                </div>
+                <div class="form-group">
+                    <label>Ваша цена продажи (₸)</label>
+                    <input type="number" id="selling_price" placeholder="33000">
                 </div>
                 <button class="btn" onclick="searchProduct()">Анализировать</button>
                 <div class="loader" id="loader">
@@ -77,10 +81,10 @@
             <div class="card">
                 <h2>💡 Как это работает</h2>
                 <div style="font-size: 13px; color: #d1d5db; line-height: 1.8;">
-                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите название товара</strong><br>Например: "Corsair мышка Gaming RGB"</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите точное название товара</strong><br>Как оно называется на Kaspi</p>
                     <p style="margin-bottom: 12px;"><strong style="color: #f97316;">2. Укажите закупочную цену</strong><br>Сколько вы платите поставщику</p>
-                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. Система найдёт конкурентов</strong><br>Покажет товары на Kaspi с похожими названиями</p>
-                    <p><strong style="color: #f97316;">4. Рассчитает прибыль</strong><br>Покажет будете ли вы в плюсе или минусе</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. Укажите цену продажи</strong><br>За сколько хотите продавать на Kaspi</p>
+                    <p><strong style="color: #f97316;">4. Система рассчитает прибыль</strong><br>С учётом комиссии Kaspi (15%)</p>
                 </div>
             </div>
             
@@ -88,7 +92,7 @@
                 <h2>📈 Результаты анализа</h2>
                 <div class="result-card" id="primary_result"></div>
                 <div id="alternatives_section" style="display: none;">
-                    <h3 style="font-size: 14px; color: #9ca3af; margin-top: 24px; margin-bottom: 12px;">📋 Альтернативные товары на Kaspi</h3>
+                    <h3 style="font-size: 14px; color: #9ca3af; margin-top: 24px; margin-bottom: 12px;">📋 Похожие товары на Kaspi</h3>
                     <div id="alternatives_list"></div>
                 </div>
             </div>
@@ -99,9 +103,15 @@
         async function searchProduct() {
             const product_name = document.getElementById('product_name').value.trim();
             const cost_price = document.getElementById('cost_price').value.trim();
+            const selling_price = document.getElementById('selling_price').value.trim();
             
             if (!product_name) {
                 alert('⚠️ Введите название товара');
+                return;
+            }
+            
+            if (!selling_price) {
+                alert('⚠️ Введите цену продажи');
                 return;
             }
             
@@ -114,7 +124,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         product_name: product_name,
-                        cost_price: cost_price ? parseInt(cost_price) : null
+                        cost_price: cost_price ? parseInt(cost_price) : null,
+                        selling_price: selling_price ? parseInt(selling_price) : null
                     })
                 });
                 
@@ -123,7 +134,7 @@
                 if (data.status === 'found') {
                     displayResults(data);
                 } else {
-                    alert('❌ Товар не найден на Kaspi. Попробуйте другое название.');
+                    alert('❌ Товар не найден на Kaspi. Проверьте точное название.');
                 }
             } catch (error) {
                 alert('❌ Ошибка: ' + error.message);
@@ -138,41 +149,49 @@
             const market = data.market_data;
             const alternatives = data.alternatives || [];
             
-            let html = `<div class="product-name">${primary.name}</div>`;
+            let html = `
+                <div class="product-name">
+                    ${primary.name}
+                    <span class="similarity-badge">${primary.similarity.toFixed(0)}% совпадение</span>
+                </div>
+                <div style="font-size: 13px; color: #9ca3af; padding: 12px; background: #1e2a3a; border-radius: 6px; margin-bottom: 12px;">
+                    👤 Продавец: <strong>${primary.seller}</strong>
+                </div>
+            `;
             
             if (profit) {
                 const isProfitable = profit.profitable;
                 html += isProfitable 
-                    ? `<div class="success-box">✅ Прибыль: <strong>${profit.profit.toLocaleString()}₸</strong> | Маржа: <strong>${profit.margin}%</strong></div>`
+                    ? `<div class="success-box">✅ ПРИБЫЛЬ: <strong>${profit.profit.toLocaleString()}₸</strong> | Маржа: <strong>${profit.margin}%</strong></div>`
                     : `<div class="warning-box">⚠️ ${profit.warning}</div>`;
                 
                 html += `
                     <div class="profit-grid">
                         <div class="profit-item">
-                            <div class="profit-label">Цена на Kaspi</div>
-                            <div class="profit-value">${profit.selling_price.toLocaleString()}₸</div>
-                        </div>
-                        <div class="profit-item">
                             <div class="profit-label">Закупка</div>
                             <div class="profit-value">${profit.cost_price.toLocaleString()}₸</div>
                         </div>
                         <div class="profit-item">
-                            <div class="profit-label">Комиссия Kaspi (15%)</div>
+                            <div class="profit-label">Ваша цена</div>
+                            <div class="profit-value" style="color: #10b981;">${profit.selling_price.toLocaleString()}₸</div>
+                        </div>
+                        <div class="profit-item">
+                            <div class="profit-label">Комиссия Kaspi</div>
                             <div class="profit-value" style="color: #ef4444;">-${profit.commission.toLocaleString()}₸</div>
                         </div>
                         <div class="profit-item">
-                            <div class="profit-label">Чистая прибыль</div>
+                            <div class="profit-label">ЧИСТАЯ ПРИБЫЛЬ</div>
                             <div class="profit-value ${isProfitable ? 'positive' : 'negative'}">
                                 ${isProfitable ? '+' : ''}${profit.profit.toLocaleString()}₸
                             </div>
                         </div>
                     </div>
                     <div class="market-data">
-                        <h4 style="font-size: 13px; color: #9ca3af; margin-bottom: 12px;">📊 Анализ рынка</h4>
-                        <div class="market-row"><span>Минимальная цена на Kaspi</span><span style="color: #f97316; font-weight: 600;">${market.min_price.toLocaleString()}₸</span></div>
-                        <div class="market-row"><span>Средняя цена на Kaspi</span><span style="color: #f97316; font-weight: 600;">${market.avg_price.toLocaleString()}₸</span></div>
+                        <h4 style="font-size: 13px; color: #9ca3af; margin-bottom: 12px;">📊 Конкуренты на Kaspi</h4>
+                        <div class="market-row"><span>Минимальная цена</span><span style="color: #f97316; font-weight: 600;">${market.min_price.toLocaleString()}₸</span></div>
+                        <div class="market-row"><span>Средняя цена</span><span style="color: #f97316; font-weight: 600;">${market.avg_price.toLocaleString()}₸</span></div>
                         <div class="market-row"><span>Рекомендуемая цена</span><span style="color: #10b981; font-weight: 600;">${market.recommended_price.toLocaleString()}₸</span></div>
-                        <div class="market-row"><span>Конкурентов в нише</span><span style="color: #9ca3af; font-weight: 600;">${market.competitors_count}</span></div>
+                        <div class="market-row"><span>Конкурентов</span><span>${market.competitors_count}</span></div>
                     </div>
                 `;
             }
@@ -193,3 +212,7 @@
     </script>
 </body>
 </html>
+EOFHTML
+
+systemctl reload nginx
+echo "✅ seller.html обновлен"
