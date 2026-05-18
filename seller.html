@@ -237,33 +237,33 @@
         }
         
         function getTactic(our_price, comp_price, breakeven, comp_profit, cost) {
-            let verdict = '';
-            let recommendation = '';
-            let color = '';
-            
-            if (comp_price < breakeven) {
-                verdict = '⚠️ СТОП-ДЕМПИНГ / ОЖИДАНИЕ';
-                recommendation = `Конкурент опустил цену <strong>${comp_price.toLocaleString()}₸</strong> ниже вашей безубыточности <strong>${breakeven.toLocaleString()}₸</strong>. Если вы упадёте до его цены, потеряете <strong>${Math.abs(comp_profit).toLocaleString()}₸</strong> на каждой продаже.<br><br>🎯 <strong>Совет:</strong> Держите цену в плюсе. Ждите, пока конкурент закончит товар или поднимет цену.`;
-                color = '#ef4444';
-            } else if (our_price > comp_price) {
-                verdict = '🎯 ДЕМПИНГ / ВОЗВРАТ КНОПКИ';
-                const new_price = comp_price - 50;
-                const new_profit = new_price - Math.round(new_price * 0.15) - Math.round(new_price * 0.03) - 700 - cost;
-                recommendation = `Вы <strong>дороже конкурента</strong> на <strong>${(our_price - comp_price).toLocaleString()}₸</strong>. Конкурент в плюсе, поэтому есть место для маневра.<br><br>🎯 <strong>Совет:</strong> Снизьте цену на <strong>50₸ до ${new_price.toLocaleString()}₸</strong>. При этой цене прибыль будет <strong>${new_profit > 0 ? '+' : ''}${new_profit.toLocaleString()}₸</strong>, и вы вернёте кнопку "Купить".`;
-                color = '#f59e0b';
-            } else {
-                verdict = '🚀 УДЕРЖАНИЕ ПОЗИЦИИ';
-                const raised_price = comp_price - 10;
-                const raised_profit = raised_price - Math.round(raised_price * 0.15) - Math.round(raised_price * 0.03) - 700 - cost;
-                recommendation = `Отлично! Вы <strong>дешевле конкурента</strong>. Кнопка "Купить" ваша, и покупатели идут к вам.<br><br>🎯 <strong>Совет:</strong> Можно приподнять цену на <strong>10₸ до ${raised_price.toLocaleString()}₸</strong> и остаться в лидере. Прибыль увеличится до <strong>${raised_profit.toLocaleString()}₸</strong>.`;
-                color = '#10b981';
-            }
-            
-            return `<div style="color: ${color}; font-size: 14px; line-height: 1.8;">
-                <div style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">${verdict}</div>
-                <div>${recommendation}</div>
-            </div>`;
-        }
+    let verdict = '';
+    let recommendation = '';
+    let color = '';
+    
+    if (comp_price < breakeven) {
+        verdict = '⚠️ СТОП-ДЕМПИНГ / ОЖИДАНИЕ';
+        recommendation = `Конкурент опустил цену <strong>${comp_price.toLocaleString()}₸</strong> ниже вашей безубыточности <strong>${breakeven.toLocaleString()}₸</strong>. Если вы упадёте до его цены, потеряете <strong>${Math.abs(comp_profit).toLocaleString()}₸</strong> на каждой продаже.<br/><br/>🎯 <strong>Совет:</strong> Держите цену в плюсе. Ждите, пока конкурент закончит товар или поднимет цену.`;
+        color = '#ef4444';
+    } else if (our_price > comp_price) {
+        verdict = '🎯 ДЕМПИНГ / ВОЗВРАТ КНОПКИ';
+        const new_price = comp_price - 50;
+        const new_profit = new_price - Math.round(new_price * 0.15) - Math.round(new_price * 0.03) - 700 - cost;
+        recommendation = `Вы <strong>дороже конкурента</strong> на <strong>${(our_price - comp_price).toLocaleString()}₸</strong>. Конкурент в плюсе, поэтому есть место для маневра.<br/><br/>🎯 <strong>Совет:</strong> Снизьте цену на <strong>50₸ до ${new_price.toLocaleString()}₸</strong>. При этой цене прибыль будет <strong>${new_profit > 0 ? '+' : ''}${new_profit.toLocaleString()}₸</strong>, и вы вернёте кнопку "Купить".`;
+        color = '#f59e0b';
+    } else {
+        verdict = '🚀 УДЕРЖАНИЕ ПОЗИЦИИ';
+        const raised_price = comp_price - 10;
+        const raised_profit = raised_price - Math.round(raised_price * 0.15) - Math.round(raised_price * 0.03) - 700 - cost;
+        recommendation = `Отлично! Вы <strong>дешевле конкурента</strong>. Кнопка "Купить" ваша, и покупатели идут к вам.<br/><br/>🎯 <strong>Совет:</strong> Можно приподнять цену на <strong>10₸ до ${raised_price.toLocaleString()}₸</strong> и остаться в лидере. Прибыль увеличится до <strong>${raised_profit.toLocaleString()}₸</strong>.`;
+        color = '#10b981';
+    }
+    
+    return `<div style="color: ${color}; font-size: 14px; line-height: 1.8;">
+        <div style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">${verdict}</div>
+        <div>${recommendation}</div>
+    </div>`;
+}
     </script>
 </body>
 </html>
