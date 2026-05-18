@@ -177,18 +177,21 @@
             document.getElementById('primary_result').innerHTML = html;
             
             // AI РЕКОМЕНДАЦИИ
-            if (aiExpert) {
-                const aiHTML = `
-                    <div class="ai-box">
-                        <h4>🤖 Рекомендация эксперта</h4>
-                        <div class="ai-verdict">${aiExpert.verdict}</div>
-                        <div class="ai-text"><strong>Совет:</strong> ${aiExpert.advice}</div>
-                        <div class="ai-tip">💡 ${aiExpert.tip}</div>
-                    </div>
-                `;
-                document.getElementById('ai_section').innerHTML = aiHTML;
-                document.getElementById('ai_section').style.display = 'block';
-            }
+           if (aiExpert) {
+        const aiHTML = `
+            <div class="ai-box">
+                <h4>🤖 Анализ эксперта</h4>
+                <div class="ai-verdict">${aiExpert.verdict}</div>
+                <div class="ai-text"><strong>Анализ:</strong> ${aiExpert.advice}</div>
+                <div style="margin-top: 10px;">
+                    ${aiExpert.recommendations.map(r => `<div style="margin: 5px 0; font-size: 13px;">${r}</div>`).join('')}
+                </div>
+                <div class="ai-tip">${aiExpert.tip}</div>
+            </div>
+        `;
+        document.getElementById('ai_section').innerHTML = aiHTML;
+        document.getElementById('ai_section').style.display = 'block';
+    }
             
             // РЫНОК
             if (market) {
