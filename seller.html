@@ -16,6 +16,10 @@
         .upload-area { border: 2px dashed #f97316; border-radius: 12px; padding: 50px; text-align: center; cursor: pointer; }
         .upload-area:hover { background: rgba(249, 115, 22, 0.1); }
         .file-input { display: none; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; font-weight: 600; }
+        .form-group select { width: 100%; padding: 10px 12px; background: #0f1419; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; }
+        .form-group select:focus { outline: none; border-color: #f97316; }
         .btn { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
         .btn-block { width: 100%; padding: 14px; margin-top: 16px; }
@@ -28,6 +32,7 @@
         .error { color: #ef4444; }
         .results { margin-top: 20px; display: none; }
         .success-msg { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #a7f3d0; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
+        .settings-block { background: #0f1419; border: 1px solid #2d3e4f; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -35,6 +40,31 @@
         <div class="header">
             <h1>📊 MarketAnalyst.kz</h1>
             <p style="color: #9ca3af; margin-top: 8px;">Загрузи товары и получи рекомендации по ценам</p>
+        </div>
+        
+        <div class="card">
+            <h2>⚙️ Настройки уведомлений</h2>
+            
+            <div class="settings-block">
+                <div class="form-group">
+                    <label>🔔 Во сколько приходят уведомления в Telegram?</label>
+                    <select id="notificationHour">
+                        <option value="0">00:00 (полночь)</option>
+                        <option value="2" selected>02:00 (2 ночи)</option>
+                        <option value="4">04:00 (4 ночи)</option>
+                        <option value="6">06:00 (6 утра)</option>
+                        <option value="8">08:00 (8 утра)</option>
+                        <option value="10">10:00 (10 утра)</option>
+                        <option value="12">12:00 (полдень)</option>
+                        <option value="14">14:00 (2 дня)</option>
+                        <option value="16">16:00 (4 дня)</option>
+                        <option value="18">18:00 (6 вечера)</option>
+                        <option value="20">20:00 (8 вечера)</option>
+                        <option value="22">22:00 (10 вечера)</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="saveNotificationTime()" style="width: 100%;">✅ Сохранить время</button>
+            </div>
         </div>
         
         <div class="card">
@@ -60,6 +90,34 @@
     
     <script>
         let allProducts = [];
+        let currentSellerId = 'user_' + Math.random().toString(36).substr(2, 9);
+        
+        function saveNotificationTime() {
+            const hour = document.getElementById('notificationHour').value;
+            console.log('💾 Сохраняю время уведомлений:', hour + ':00');
+            
+            fetch('https://api.marketanalyst.kz/api/seller/set-notification-time', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    seller_id: currentSellerId,
+                    notification_hour: parseInt(hour)
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log('Response:', data);
+                if (data.status === 'success') {
+                    alert(`✅ Время уведомлений установлено на ${hour}:00`);
+                } else {
+                    alert('❌ Ошибка: ' + data.message);
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('⚠️ Ошибка подключения');
+            });
+        }
         
         function downloadTemplate() {
             const data = [
@@ -154,12 +212,15 @@
             document.getElementById('saveBtn').disabled = true;
             document.getElementById('saveBtn').textContent = '⏳ Сохранение...';
             
+            const hour = document.getElementById('notificationHour').value;
+            
             fetch('https://api.marketanalyst.kz/api/seller/save-products', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    seller_id: 'user_' + Date.now(),
-                    products: allProducts
+                    seller_id: currentSellerId,
+                    products: allProducts,
+                    notification_hour: parseInt(hour)
                 })
             })
             .then(r => {
@@ -169,7 +230,7 @@
             .then(data => {
                 console.log('Response:', data);
                 if (data.status === 'success') {
-                    document.getElementById('successMsg').innerHTML = `✅ Сохранено товаров: ${data.count}! Система будет анализировать цены в 02:00`;
+                    document.getElementById('successMsg').innerHTML = `✅ Сохранено товаров: ${data.count}! Уведомления в ${hour}:00`;
                     document.getElementById('successMsg').style.display = 'block';
                     document.getElementById('saveBtn').textContent = '✅ Сохранено!';
                 } else {
