@@ -6,13 +6,7 @@
     <title>Личный кабинет - MarketAnalyst.kz</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #060b14 0%, #0f1419 100%);
-            color: #e5e7eb;
-            min-height: 100vh;
-            padding: 20px;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #060b14 0%, #0f1419 100%); color: #e5e7eb; min-height: 100vh; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 20px 0; border-bottom: 1px solid #1e2a3a; }
         .header h1 { font-size: 28px; color: #f97316; }
@@ -30,6 +24,11 @@
         .product-name { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #f3f4f6; }
         .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 12px; margin-bottom: 16px; color: #fca5a5; font-size: 13px; }
         .success-box { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 6px; padding: 12px; margin-bottom: 16px; color: #a7f3d0; font-size: 13px; }
+        .ai-box { background: rgba(249, 115, 22, 0.1); border: 1px solid #f97316; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+        .ai-box h4 { color: #f97316; margin-bottom: 10px; font-size: 14px; }
+        .ai-verdict { font-size: 18px; font-weight: 700; color: #f97316; margin-bottom: 8px; }
+        .ai-text { font-size: 13px; color: #d1d5db; line-height: 1.6; margin-bottom: 8px; }
+        .ai-tip { font-size: 12px; color: #9ca3af; font-style: italic; margin-top: 8px; padding-top: 8px; border-top: 1px solid #1e2a3a; }
         .profit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .profit-item { background: #1e2a3a; padding: 12px; border-radius: 6px; }
         .profit-label { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
@@ -43,7 +42,6 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .alt-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e2a3a; font-size: 13px; }
         .alt-price { color: #f97316; font-weight: 600; }
-        .similarity-badge { display: inline-block; background: #1e2a3a; color: #9ca3af; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; }
     </style>
 </head>
 <body>
@@ -74,7 +72,7 @@
                 <button class="btn" onclick="searchProduct()">Анализировать</button>
                 <div class="loader" id="loader">
                     <div class="spinner"></div>
-                    <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Поиск товара...</div>
+                    <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Анализируем товар...</div>
                 </div>
             </div>
             
@@ -84,13 +82,14 @@
                     <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите точное название товара</strong><br>Как оно называется на Kaspi</p>
                     <p style="margin-bottom: 12px;"><strong style="color: #f97316;">2. Укажите закупочную цену</strong><br>Сколько вы платите поставщику</p>
                     <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. Укажите цену продажи</strong><br>За сколько хотите продавать на Kaspi</p>
-                    <p><strong style="color: #f97316;">4. Система рассчитает прибыль</strong><br>С учётом комиссии Kaspi (15%)</p>
+                    <p><strong style="color: #f97316;">4. Получите анализ эксперта</strong><br>Рекомендации как профессионал</p>
                 </div>
             </div>
             
             <div class="card results" id="results">
                 <h2>📈 Результаты анализа</h2>
                 <div class="result-card" id="primary_result"></div>
+                <div id="ai_section" style="display: none;"></div>
                 <div id="alternatives_section" style="display: none;">
                     <h3 style="font-size: 14px; color: #9ca3af; margin-top: 24px; margin-bottom: 12px;">📋 Похожие товары на Kaspi</h3>
                     <div id="alternatives_list"></div>
@@ -105,15 +104,8 @@
             const cost_price = document.getElementById('cost_price').value.trim();
             const selling_price = document.getElementById('selling_price').value.trim();
             
-            if (!product_name) {
-                alert('⚠️ Введите название товара');
-                return;
-            }
-            
-            if (!selling_price) {
-                alert('⚠️ Введите цену продажи');
-                return;
-            }
+            if (!product_name) { alert('⚠️ Введите название товара'); return; }
+            if (!selling_price) { alert('⚠️ Введите цену продажи'); return; }
             
             document.getElementById('loader').style.display = 'block';
             document.getElementById('results').style.display = 'none';
@@ -134,7 +126,7 @@
                 if (data.status === 'found') {
                     displayResults(data);
                 } else {
-                    alert('❌ Товар не найден на Kaspi. Проверьте точное название.');
+                    alert('❌ Товар не найден на Kaspi');
                 }
             } catch (error) {
                 alert('❌ Ошибка: ' + error.message);
@@ -148,16 +140,9 @@
             const profit = data.profit_analysis;
             const market = data.market_data;
             const alternatives = data.alternatives || [];
+            const aiExpert = data.ai_expert;
             
-            let html = `
-                <div class="product-name">
-                    ${primary.name}
-                    <span class="similarity-badge">${primary.similarity.toFixed(0)}% совпадение</span>
-                </div>
-                <div style="font-size: 13px; color: #9ca3af; padding: 12px; background: #1e2a3a; border-radius: 6px; margin-bottom: 12px;">
-                    👤 Продавец: <strong>${primary.seller}</strong>
-                </div>
-            `;
+            let html = `<div class="product-name">${primary.name}</div>`;
             
             if (profit) {
                 const isProfitable = profit.profitable;
@@ -186,18 +171,40 @@
                             </div>
                         </div>
                     </div>
+                `;
+            }
+            
+            document.getElementById('primary_result').innerHTML = html;
+            
+            // AI РЕКОМЕНДАЦИИ
+            if (aiExpert) {
+                const aiHTML = `
+                    <div class="ai-box">
+                        <h4>🤖 Рекомендация эксперта</h4>
+                        <div class="ai-verdict">${aiExpert.verdict}</div>
+                        <div class="ai-text"><strong>Совет:</strong> ${aiExpert.advice}</div>
+                        <div class="ai-tip">💡 ${aiExpert.tip}</div>
+                    </div>
+                `;
+                document.getElementById('ai_section').innerHTML = aiHTML;
+                document.getElementById('ai_section').style.display = 'block';
+            }
+            
+            // РЫНОК
+            if (market) {
+                const marketHTML = `
                     <div class="market-data">
-                        <h4 style="font-size: 13px; color: #9ca3af; margin-bottom: 12px;">📊 Конкуренты на Kaspi</h4>
+                        <h4 style="font-size: 13px; color: #9ca3af; margin-bottom: 12px;">📊 Анализ рынка</h4>
                         <div class="market-row"><span>Минимальная цена</span><span style="color: #f97316; font-weight: 600;">${market.min_price.toLocaleString()}₸</span></div>
                         <div class="market-row"><span>Средняя цена</span><span style="color: #f97316; font-weight: 600;">${market.avg_price.toLocaleString()}₸</span></div>
                         <div class="market-row"><span>Рекомендуемая цена</span><span style="color: #10b981; font-weight: 600;">${market.recommended_price.toLocaleString()}₸</span></div>
                         <div class="market-row"><span>Конкурентов</span><span>${market.competitors_count}</span></div>
                     </div>
                 `;
+                document.getElementById('primary_result').innerHTML += marketHTML;
             }
             
-            document.getElementById('primary_result').innerHTML = html;
-            
+            // АЛЬТЕРНАТИВЫ
             if (alternatives.length > 0) {
                 let altHTML = '';
                 alternatives.forEach(alt => {
@@ -212,7 +219,3 @@
     </script>
 </body>
 </html>
-EOFHTML
-
-systemctl reload nginx
-echo "✅ seller.html обновлен"
