@@ -21,14 +21,10 @@
         .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
         .results { grid-column: 1 / -1; display: none; }
         .result-card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #f97316; }
-        .product-name { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #f3f4f6; }
-        .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 12px; margin-bottom: 16px; color: #fca5a5; font-size: 13px; }
-        .success-box { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 6px; padding: 12px; margin-bottom: 16px; color: #a7f3d0; font-size: 13px; }
         .ai-box { background: rgba(249, 115, 22, 0.1); border: 1px solid #f97316; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
         .ai-box h4 { color: #f97316; margin-bottom: 10px; font-size: 14px; }
         .ai-verdict { font-size: 18px; font-weight: 700; color: #f97316; margin-bottom: 8px; }
         .ai-text { font-size: 13px; color: #d1d5db; line-height: 1.6; margin-bottom: 8px; }
-        .ai-tip { font-size: 12px; color: #9ca3af; font-style: italic; margin-top: 8px; padding-top: 8px; border-top: 1px solid #1e2a3a; }
         .profit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .profit-item { background: #1e2a3a; padding: 12px; border-radius: 6px; }
         .profit-label { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
@@ -40,8 +36,10 @@
         .loader { display: none; text-align: center; padding: 20px; }
         .spinner { border: 3px solid #1e2a3a; border-top: 3px solid #f97316; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .alt-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e2a3a; font-size: 13px; }
-        .alt-price { color: #f97316; font-weight: 600; }
+        .status-box { padding: 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
+        .status-breakeven { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #fca5a5; }
+        .status-warning { background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #fcd34d; }
+        .status-success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #a7f3d0; }
     </style>
 </head>
 <body>
@@ -50,50 +48,52 @@
             <h1>📊 MarketAnalyst.kz</h1>
             <div style="text-align: right; font-size: 14px; color: #9ca3af;">
                 <div>Личный кабинет продавца</div>
-                <div style="font-size: 12px; margin-top: 4px;">Анализ товаров и конкурентов</div>
+                <div style="font-size: 12px; margin-top: 4px;">Анализ конкуренции и прибыли</div>
             </div>
         </div>
         
         <div class="main-content">
             <div class="card">
-                <h2>🔍 Поиск товара</h2>
+                <h2>🔍 Анализ товара</h2>
                 <div class="form-group">
-                    <label>Название товара (точное)</label>
-                    <input type="text" id="product_name" placeholder="Corsair M55 RGB">
+                    <label>Название товара</label>
+                    <input type="text" id="product_name" placeholder="Apple iPhone 15 Pro">
                 </div>
                 <div class="form-group">
                     <label>Закупочная цена (₸)</label>
-                    <input type="number" id="cost_price" placeholder="10000">
+                    <input type="number" id="cost_price" placeholder="750000">
                 </div>
                 <div class="form-group">
-                    <label>Ваша цена продажи (₸)</label>
-                    <input type="number" id="selling_price" placeholder="33000">
+                    <label>ВАША цена на Kaspi (₸)</label>
+                    <input type="number" id="selling_price" placeholder="900000">
+                </div>
+                <div class="form-group">
+                    <label>Цена ГЛАВНОГО конкурента (₸)</label>
+                    <input type="number" id="competitor_price" placeholder="850000">
                 </div>
                 <button class="btn" onclick="searchProduct()">Анализировать</button>
                 <div class="loader" id="loader">
                     <div class="spinner"></div>
-                    <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Анализируем товар...</div>
+                    <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Анализируем...</div>
                 </div>
             </div>
             
             <div class="card">
-                <h2>💡 Как это работает</h2>
+                <h2>💡 Как работает</h2>
                 <div style="font-size: 13px; color: #d1d5db; line-height: 1.8;">
-                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите точное название товара</strong><br>Как оно называется на Kaspi</p>
-                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">2. Укажите закупочную цену</strong><br>Сколько вы платите поставщику</p>
-                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. Укажите цену продажи</strong><br>За сколько хотите продавать на Kaspi</p>
-                    <p><strong style="color: #f97316;">4. Получите анализ эксперта</strong><br>Рекомендации как профессионал</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите ваши данные</strong><br>Закупка, ваша цена и цена конкурента</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">2. Система считает реальную прибыль</strong><br>С учётом налогов, комиссии, доставки</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. AI даёт рекомендацию</strong><br>Менять цену или нет, на сколько</p>
+                    <p><strong style="color: #f97316;">4. Получите стратегию</strong><br>Как удержать позицию в выдаче</p>
                 </div>
             </div>
             
             <div class="card results" id="results">
-                <h2>📈 Результаты анализа</h2>
-                <div class="result-card" id="primary_result"></div>
-                <div id="ai_section" style="display: none;"></div>
-                <div id="alternatives_section" style="display: none;">
-                    <h3 style="font-size: 14px; color: #9ca3af; margin-top: 24px; margin-bottom: 12px;">📋 Похожие товары на Kaspi</h3>
-                    <div id="alternatives_list"></div>
-                </div>
+                <h2>📈 Анализ карточки</h2>
+                <div id="status_section"></div>
+                <div id="breakeven_section"></div>
+                <div id="profit_section"></div>
+                <div id="tactic_section"></div>
             </div>
         </div>
     </div>
@@ -101,33 +101,40 @@
     <script>
         async function searchProduct() {
             const product_name = document.getElementById('product_name').value.trim();
-            const cost_price = document.getElementById('cost_price').value.trim();
-            const selling_price = document.getElementById('selling_price').value.trim();
+            const cost_price = parseInt(document.getElementById('cost_price').value) || 0;
+            const selling_price = parseInt(document.getElementById('selling_price').value) || 0;
+            const competitor_price = parseInt(document.getElementById('competitor_price').value) || 0;
             
-            if (!product_name) { alert('⚠️ Введите название товара'); return; }
-            if (!selling_price) { alert('⚠️ Введите цену продажи'); return; }
+            if (!product_name || !cost_price || !selling_price) {
+                alert('⚠️ Заполните все поля');
+                return;
+            }
             
             document.getElementById('loader').style.display = 'block';
             document.getElementById('results').style.display = 'none';
             
             try {
-                const response = await fetch('https://api.marketanalyst.kz/api/seller/search-product', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        product_name: product_name,
-                        cost_price: cost_price ? parseInt(cost_price) : null,
-                        selling_price: selling_price ? parseInt(selling_price) : null
-                    })
+                // Расчёт параметров
+                const kaspi_commission = selling_price * 0.15;
+                const tax = selling_price * 0.03;
+                const delivery = 700;
+                const profit = selling_price - kaspi_commission - tax - delivery - cost_price;
+                const margin = (profit / selling_price * 100).toFixed(1);
+                
+                // Точка безубыточности
+                const breakeven = Math.ceil((cost_price + delivery) / (1 - 0.15 - 0.03));
+                
+                displayAnalysis({
+                    product_name,
+                    cost_price,
+                    selling_price,
+                    competitor_price,
+                    profit,
+                    margin,
+                    breakeven,
+                    kaspi_commission: Math.round(kaspi_commission),
+                    tax: Math.round(tax)
                 });
-                
-                const data = await response.json();
-                
-                if (data.status === 'found') {
-                    displayResults(data);
-                } else {
-                    alert('❌ Товар не найден на Kaspi');
-                }
             } catch (error) {
                 alert('❌ Ошибка: ' + error.message);
             } finally {
@@ -135,90 +142,122 @@
             }
         }
         
-        function displayResults(data) {
-            const primary = data.primary;
-            const profit = data.profit_analysis;
-            const market = data.market_data;
-            const alternatives = data.alternatives || [];
-            const aiExpert = data.ai_expert;
+        function displayAnalysis(data) {
+            const { product_name, cost_price, selling_price, competitor_price, profit, margin, breakeven, kaspi_commission, tax } = data;
             
-            let html = `<div class="product-name">${primary.name}</div>`;
+            // СТАТУС
+            let status_html = `
+                <div class="result-card">
+                    <h3 style="color: #f97316; margin-bottom: 12px;">📊 ТЕКУЩИЙ СТАТУС КАРТОЧКИ</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="status-box ${selling_price < competitor_price ? 'status-success' : 'status-warning'}">
+                            <div style="font-size: 11px; color: #9ca3af;">Ваша цена / Конкурент</div>
+                            <div style="font-size: 16px; font-weight: 700;">${selling_price.toLocaleString()}₸ / ${competitor_price.toLocaleString()}₸</div>
+                            <div style="font-size: 11px; margin-top: 4px;">${selling_price < competitor_price ? '🟢 ВЫ ДЕШЕВЛЕ (кнопка ваша!)' : '🔴 ВЫ ДОРОЖЕ (конкурент впереди)'}</div>
+                        </div>
+                        <div class="status-box status-breakeven">
+                            <div style="font-size: 11px; color: #9ca3af;">Точка безубыточности</div>
+                            <div style="font-size: 16px; font-weight: 700;">${breakeven.toLocaleString()}₸</div>
+                            <div style="font-size: 11px; margin-top: 4px;">${competitor_price < breakeven ? '⚠️ КОНКУРЕНТ НИЖЕ ВАШЕГО 0' : '✅ Конкурент выше 0'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
             
-            if (profit) {
-                const isProfitable = profit.profitable;
-                html += isProfitable 
-                    ? `<div class="success-box">✅ ПРИБЫЛЬ: <strong>${profit.profit.toLocaleString()}₸</strong> | Маржа: <strong>${profit.margin}%</strong></div>`
-                    : `<div class="warning-box">⚠️ ${profit.warning}</div>`;
-                
-                html += `
+            // ПРИБЫЛЬ
+            let profit_html = `
+                <div class="result-card">
+                    <h3 style="color: #f97316; margin-bottom: 12px;">💰 РЕАЛЬНАЯ ПРИБЫЛЬ (с налогами и доставкой)</h3>
                     <div class="profit-grid">
                         <div class="profit-item">
                             <div class="profit-label">Закупка</div>
-                            <div class="profit-value">${profit.cost_price.toLocaleString()}₸</div>
+                            <div class="profit-value">${cost_price.toLocaleString()}₸</div>
                         </div>
                         <div class="profit-item">
                             <div class="profit-label">Ваша цена</div>
-                            <div class="profit-value" style="color: #10b981;">${profit.selling_price.toLocaleString()}₸</div>
+                            <div class="profit-value" style="color: #10b981;">${selling_price.toLocaleString()}₸</div>
                         </div>
                         <div class="profit-item">
-                            <div class="profit-label">Комиссия Kaspi</div>
-                            <div class="profit-value" style="color: #ef4444;">-${profit.commission.toLocaleString()}₸</div>
+                            <div class="profit-label">Комиссия Kaspi (15%)</div>
+                            <div class="profit-value" style="color: #ef4444;">-${kaspi_commission.toLocaleString()}₸</div>
+                        </div>
+                        <div class="profit-item">
+                            <div class="profit-label">Налог ИП (3%)</div>
+                            <div class="profit-value" style="color: #ef4444;">-${tax.toLocaleString()}₸</div>
+                        </div>
+                        <div class="profit-item">
+                            <div class="profit-label">Доставка</div>
+                            <div class="profit-value" style="color: #ef4444;">-700₸</div>
                         </div>
                         <div class="profit-item">
                             <div class="profit-label">ЧИСТАЯ ПРИБЫЛЬ</div>
-                            <div class="profit-value ${isProfitable ? 'positive' : 'negative'}">
-                                ${isProfitable ? '+' : ''}${profit.profit.toLocaleString()}₸
-                            </div>
+                            <div class="profit-value ${profit > 0 ? 'positive' : 'negative'}">${profit > 0 ? '+' : ''}${profit.toLocaleString()}₸</div>
+                        </div>
+                        <div style="grid-column: 1/-1; padding-top: 8px; border-top: 1px solid #1e2a3a; font-size: 13px; color: #9ca3af;">
+                            <strong>Маржа:</strong> <span style="color: ${margin > 20 ? '#10b981' : margin > 10 ? '#f59e0b' : '#ef4444'}; font-weight: 700;">${margin}%</span>
                         </div>
                     </div>
-                `;
-            }
-            
-            document.getElementById('primary_result').innerHTML = html;
-            
-            // AI РЕКОМЕНДАЦИИ
-           if (aiExpert) {
-        const aiHTML = `
-            <div class="ai-box">
-                <h4>🤖 Анализ эксперта</h4>
-                <div class="ai-verdict">${aiExpert.verdict}</div>
-                <div class="ai-text"><strong>Анализ:</strong> ${aiExpert.advice}</div>
-                <div style="margin-top: 10px;">
-                    ${aiExpert.recommendations.map(r => `<div style="margin: 5px 0; font-size: 13px;">${r}</div>`).join('')}
                 </div>
-                <div class="ai-tip">${aiExpert.tip}</div>
-            </div>
-        `;
-        document.getElementById('ai_section').innerHTML = aiHTML;
-        document.getElementById('ai_section').style.display = 'block';
-    }
+            `;
             
-            // РЫНОК
-            if (market) {
-                const marketHTML = `
-                    <div class="market-data">
-                        <h4 style="font-size: 13px; color: #9ca3af; margin-bottom: 12px;">📊 Анализ рынка</h4>
-                        <div class="market-row"><span>Минимальная цена</span><span style="color: #f97316; font-weight: 600;">${market.min_price.toLocaleString()}₸</span></div>
-                        <div class="market-row"><span>Средняя цена</span><span style="color: #f97316; font-weight: 600;">${market.avg_price.toLocaleString()}₸</span></div>
-                        <div class="market-row"><span>Рекомендуемая цена</span><span style="color: #10b981; font-weight: 600;">${market.recommended_price.toLocaleString()}₸</span></div>
-                        <div class="market-row"><span>Конкурентов</span><span>${market.competitors_count}</span></div>
-                    </div>
-                `;
-                document.getElementById('primary_result').innerHTML += marketHTML;
-            }
+            // ТАКТИКА
+            let tactic_html = getTacticAnalysis(selling_price, competitor_price, breakeven, profit, cost_price);
             
-            // АЛЬТЕРНАТИВЫ
-            if (alternatives.length > 0) {
-                let altHTML = '';
-                alternatives.forEach(alt => {
-                    altHTML += `<div class="alt-item"><span>${alt.name}</span><span class="alt-price">${alt.price.toLocaleString()}₸</span></div>`;
-                });
-                document.getElementById('alternatives_list').innerHTML = altHTML;
-                document.getElementById('alternatives_section').style.display = 'block';
-            }
+            document.getElementById('status_section').innerHTML = status_html;
+            document.getElementById('profit_section').innerHTML = profit_html;
+            document.getElementById('tactic_section').innerHTML = tactic_html;
             
             document.getElementById('results').style.display = 'block';
+        }
+        
+        function getTacticAnalysis(our_price, comp_price, breakeven, profit, cost_price) {
+            let verdict = '';
+            let recommendation = '';
+            let color = '';
+            
+            if (comp_price < breakeven) {
+                // Конкурент ниже нашего нуля
+                verdict = '⚠️ СТОП-ДЕМПИНГ / ОЖИДАНИЕ';
+                recommendation = `Конкурент опустил цену ниже вашей точки безубыточности (${breakeven}₸). НЕ СЛЕДУЙТЕ ЗА НИМ - уйдёте в убыток. Совет: держите цену в плюсе и ждите, пока у конкурента закончится товар.`;
+                color = '#ef4444';
+            } else if (our_price > comp_price) {
+                // Мы дороже
+                if (comp_price > breakeven) {
+                    verdict = '🎯 ДЕМПИНГ / ВОЗВРАТ КНОПКИ';
+                    const new_price = comp_price - 50;
+                    const new_profit = new_price - (new_price * 0.15) - (new_price * 0.03) - 700 - cost_price;
+                    recommendation = `Вы ДОРОЖЕ конкурента. Его цена (${comp_price}₸) выше вашего нуля. Совет: снизьте на 50₸ до ${new_price}₸. При этой цене прибыль будет ${new_profit.toLocaleString()}₸. Вы вернёте кнопку "Купить".`;
+                    color = '#f59e0b';
+                } else {
+                    verdict = '⚠️ СТОП-ДЕМПИНГ';
+                    recommendation = `Вы дороже, но конкурент ниже вашего нуля. НЕ СНИЖАЙТЕ цену. Держите текущую позицию и ждите.`;
+                    color = '#ef4444';
+                }
+            } else {
+                // Мы дешевле
+                verdict = '🚀 УДЕРЖАНИЕ ПОЗИЦИИ';
+                const raised_price = comp_price - 10;
+                const raised_profit = raised_price - (raised_price * 0.15) - (raised_price * 0.03) - 700 - cost_price;
+                recommendation = `Отлично! Вы ДЕШЕВЛЕ конкурента (кнопка ваша). Совет: можно приподнять на 10₸ до ${raised_price}₸. При этом маржа вырастет до ${((raised_profit / raised_price) * 100).toFixed(1)}%, но вы остаётесь в лидере.`;
+                color = '#10b981';
+            }
+            
+            return `
+                <div class="result-card">
+                    <h3 style="color: ${color}; margin-bottom: 12px; font-size: 16px;">${verdict}</h3>
+                    <div style="background: rgba(${color === '#10b981' ? '16, 185, 129' : color === '#f59e0b' ? '245, 158, 11' : '239, 68, 68'}, 0.1); border: 1px solid ${color}; border-radius: 6px; padding: 12px; color: ${color}; font-size: 13px; line-height: 1.6;">
+                        ${recommendation}
+                    </div>
+                </div>
+            `;
         }
     </script>
 </body>
 </html>
+EOFHTML
+
+# Копируем на сервер
+cp /tmp/seller_updated.html /root/kaspi/public/seller.html
+systemctl reload nginx
+
+echo "✅ seller.html обновлен с реалистичными расчётами!"
