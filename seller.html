@@ -13,24 +13,21 @@
         .header h1 { font-size: 32px; color: #f97316; }
         .card { background: #1a2332; border: 1px solid #2d3e4f; border-radius: 12px; padding: 30px; margin-bottom: 20px; }
         .card h2 { color: #f97316; margin-bottom: 20px; font-size: 20px; }
-        .upload-area { border: 2px dashed #f97316; border-radius: 12px; padding: 50px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area { border: 2px dashed #f97316; border-radius: 12px; padding: 50px; text-align: center; cursor: pointer; }
         .upload-area:hover { background: rgba(249, 115, 22, 0.1); }
         .file-input { display: none; }
-        .btn { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.3s; }
+        .btn { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
         .btn-block { width: 100%; padding: 14px; margin-top: 16px; }
-        .item { background: #0f1419; padding: 14px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .item-info { flex: 1; }
-        .item-name { font-weight: 600; color: #f3f4f6; }
-        .item-details { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+        .item { background: #0f1419; padding: 14px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .item-name { font-weight: 600; }
+        .item-details { font-size: 12px; color: #9ca3af; }
         .status { font-weight: 700; }
         .ok { color: #10b981; }
         .low { color: #f59e0b; }
         .error { color: #ef4444; }
-        .results { margin-top: 20px; }
-        .loader { text-align: center; padding: 20px; display: none; }
-        .spinner { border: 3px solid #2d3e4f; border-top: 3px solid #f97316; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .results { margin-top: 20px; display: none; }
+        .success-msg { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #a7f3d0; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
@@ -52,12 +49,8 @@
                 <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
             </div>
             
-            <div class="loader" id="loader">
-                <div class="spinner"></div>
-                <div style="margin-top: 12px; color: #9ca3af;">Обработка файла...</div>
-            </div>
-            
             <div class="results" id="results">
+                <div class="success-msg" id="successMsg" style="display:none;"></div>
                 <h3 style="color: #f97316; margin-bottom: 12px;">✅ Загруженные товары:</h3>
                 <div id="itemsList"></div>
                 <button class="btn btn-block" id="saveBtn" onclick="saveAllProducts()">💾 Сохранить товары</button>
@@ -76,7 +69,6 @@
                 ['Corsair M65 RGB', 25000, 45000, 40000, 700, 15, 'НЕТ']
             ];
             const ws = XLSX.utils.aoa_to_sheet(data);
-            ws['!cols'] = [{wch: 25}, {wch: 18}, {wch: 15}, {wch: 18}, {wch: 15}, {wch: 15}, {wch: 12}];
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Товары');
             XLSX.writeFile(wb, 'MarketAnalyst_Template.xlsx');
@@ -93,7 +85,6 @@
         
         function handleDrop(e) {
             e.preventDefault();
-            document.getElementById('uploadArea').style.background = '';
             if (e.dataTransfer.files.length > 0) {
                 processExcel(e.dataTransfer.files[0]);
             }
@@ -106,9 +97,6 @@
         }
         
         function processExcel(file) {
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-            
             const reader = new FileReader();
             reader.onload = (event) => {
                 try {
@@ -118,18 +106,18 @@
                     const rows = XLSX.utils.sheet_to_json(worksheet);
                     
                     allProducts = rows;
+                    console.log('✅ Загружено товаров:', rows.length);
                     displayProducts(rows);
                 } catch (err) {
-                    alert('❌ Ошибка при чтении файла: ' + err.message);
+                    console.error('❌ Ошибка Excel:', err);
+                    alert('Ошибка: ' + err.message);
                 }
-                document.getElementById('loader').style.display = 'none';
             };
             reader.readAsArrayBuffer(file);
         }
         
         function displayProducts(products) {
             let html = '';
-            
             products.forEach(p => {
                 const cost = parseInt(p['Закупочная цена']) || 0;
                 const price = parseInt(p['ВАША цена']) || 0;
@@ -137,43 +125,32 @@
                 const commission = parseFloat(p['Комиссия %']) || 15;
                 
                 const profit = price - Math.round(price * (commission / 100)) - Math.round(price * 0.03) - delivery - cost;
-                const margin = ((profit / price) * 100).toFixed(1);
+                const margin = price > 0 ? ((profit / price) * 100).toFixed(1) : 0;
                 
-                let statusText = '';
-                let statusClass = '';
+                let status = profit < 0 ? '❌ УБЫТОК' : margin < 15 ? '⚠️ НИЗКО' : '✅ OK';
+                let statusClass = profit < 0 ? 'error' : margin < 15 ? 'low' : 'ok';
                 
-                if (profit < 0) {
-                    statusText = '❌ УБЫТОК';
-                    statusClass = 'error';
-                } else if (margin < 15) {
-                    statusText = '⚠️ НИЗКО';
-                    statusClass = 'low';
-                } else {
-                    statusText = '✅ OK';
-                    statusClass = 'ok';
-                }
-                
-                html += `
-                    <div class="item">
-                        <div class="item-info">
-                            <div class="item-name">${p['Название товара']}</div>
-                            <div class="item-details">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div>
-                        </div>
-                        <div class="status ${statusClass}">${statusText}</div>
+                html += `<div class="item">
+                    <div>
+                        <div class="item-name">${p['Название товара']}</div>
+                        <div class="item-details">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div>
                     </div>
-                `;
+                    <div class="status ${statusClass}">${status}</div>
+                </div>`;
             });
             
             document.getElementById('itemsList').innerHTML = html;
             document.getElementById('results').style.display = 'block';
+            document.getElementById('successMsg').style.display = 'none';
         }
         
         function saveAllProducts() {
             if (allProducts.length === 0) {
-                alert('⚠️ Нет товаров для сохранения');
+                alert('Нет товаров');
                 return;
             }
             
+            console.log('📤 Сохраняю товары:', allProducts.length);
             document.getElementById('saveBtn').disabled = true;
             document.getElementById('saveBtn').textContent = '⏳ Сохранение...';
             
@@ -185,18 +162,23 @@
                     products: allProducts
                 })
             })
-            .then(r => r.json())
+            .then(r => {
+                console.log('Status:', r.status);
+                return r.json();
+            })
             .then(data => {
+                console.log('Response:', data);
                 if (data.status === 'success') {
-                    alert(`✅ Отлично! Сохранено товаров: ${data.count}\n\n💬 Система будет анализировать цены каждый день в 02:00 и отправлять рекомендации в Telegram`);
-                    document.getElementById('results').style.display = 'none';
-                    document.getElementById('excelFile').value = '';
+                    document.getElementById('successMsg').innerHTML = `✅ Сохранено товаров: ${data.count}! Система будет анализировать цены в 02:00`;
+                    document.getElementById('successMsg').style.display = 'block';
+                    document.getElementById('saveBtn').textContent = '✅ Сохранено!';
                 } else {
-                    alert('❌ Ошибка: ' + data.message);
+                    alert('Ошибка: ' + data.message);
                 }
             })
             .catch(err => {
-                alert('⚠️ Ошибка подключения: ' + err.message);
+                console.error('Fetch error:', err);
+                alert('Ошибка: ' + err.message);
             })
             .finally(() => {
                 document.getElementById('saveBtn').disabled = false;
