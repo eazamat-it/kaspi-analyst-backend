@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет - MarketAnalyst.kz</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #060b14 0%, #0f1419 100%);
+            color: #e5e7eb;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 20px 0; border-bottom: 1px solid #1e2a3a; }
+        .header h1 { font-size: 28px; color: #f97316; }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 24px; }
+        .card h2 { font-size: 18px; margin-bottom: 20px; color: #f97316; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; }
+        .form-group input { width: 100%; padding: 10px 12px; background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; }
+        .form-group input:focus { outline: none; border-color: #f97316; }
+        .btn { width: 100%; padding: 12px 16px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
+        .results { grid-column: 1 / -1; display: none; }
+        .result-card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #f97316; }
+        .product-name { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #f3f4f6; }
+        .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 12px; margin-bottom: 16px; color: #fca5a5; font-size: 13px; }
+        .success-box { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 6px; padding: 12px; margin-bottom: 16px; color: #a7f3d0; font-size: 13px; }
+        .profit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .profit-item { background: #1e2a3a; padding: 12px; border-radius: 6px; }
+        .profit-label { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
+        .profit-value { font-size: 16px; font-weight: 700; color: #f97316; }
+        .profit-value.positive { color: #10b981; }
+        .profit-value.negative { color: #ef4444; }
+        .market-data { background: #1e2a3a; padding: 16px; border-radius: 6px; margin-top: 16px; }
+        .market-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #0f1419; font-size: 13px; }
+        .loader { display: none; text-align: center; padding: 20px; }
+        .spinner { border: 3px solid #1e2a3a; border-top: 3px solid #f97316; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .alternatives { margin-top: 20px; padding-top: 20px; border-top: 1px solid #1e2a3a; }
+        .alt-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e2a3a; font-size: 13px; }
+        .alt-price { color: #f97316; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 MarketAnalyst.kz</h1>
+            <div style="text-align: right; font-size: 14px; color: #9ca3af;">
+                <div>Личный кабинет продавца</div>
+                <div style="font-size: 12px; margin-top: 4px;">Анализ товаров и конкурентов</div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="card">
+                <h2>🔍 Поиск товара</h2>
+                <div class="form-group">
+                    <label>Название товара</label>
+                    <input type="text" id="product_name" placeholder="Corsair мышка Gaming">
+                </div>
+                <div class="form-group">
+                    <label>Закупочная цена (₸)</label>
+                    <input type="number" id="cost_price" placeholder="10000">
+                </div>
+                <button class="btn" onclick="searchProduct()">Анализировать</button>
+                <div class="loader" id="loader">
+                    <div class="spinner"></div>
+                    <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Поиск товара...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>💡 Как это работает</h2>
+                <div style="font-size: 13px; color: #d1d5db; line-height: 1.8;">
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите название товара</strong><br>Например: "Corsair мышка Gaming RGB"</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">2. Укажите закупочную цену</strong><br>Сколько вы платите поставщику</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. Система найдёт конкурентов</strong><br>Покажет товары на Kaspi с похожими названиями</p>
+                    <p><strong style="color: #f97316;">4. Рассчитает прибыль</strong><br>Покажет будете ли вы в плюсе или минусе</p>
+                </div>
+            </div>
+            
+            <div class="card results" id="results">
+                <h2>📈 Результаты анализа</h2>
+                <div class="result-card" id="primary_result"></div>
+                <div id="alternatives_section" style="display: none;">
+                    <h3 style="font-size: 14px; color: #9ca3af; margin-top: 24px; margin-bottom: 12px;">📋 Альтернативные товары на Kaspi</h3>
+                    <div id="alternatives_list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function searchProduct() {
+            const product_name = document.getElementById('product_name').value.trim();
+            const cost_price = document.getElementById('cost_price').value.trim();
+            
+            if (!product_name) {
+                alert('⚠️ Введите название товара');
+                return;
+            }
+            
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            try {
+                const response = await fetch('https://api.marketanalyst.kz/api/seller/search-product', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        product_name: product_name,
+                        cost_price: cost_price ? parseInt(cost_price) : null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'found') {
+                    displayResults(data);
+                } else {
+                    alert('❌ Товар не найден на Kaspi. Попробуйте другое название.');
+                }
+            } catch (error) {
+                alert('❌ Ошибка: ' + error.message);
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+        
+        function displayResults(data) {
+            const primary = data.primary;
+            const profit = data.profit_analysis;
+            const market = data.market_data;
+            const alternatives = data.alternatives || [];
+            
+            let html = `<div class="product-name">${primary.name}</div>`;
+            
+            if (profit) {
+                const isProfitable = profit.profitable;
+                html += isProfitable 
+                    ? `<div class="success-box">✅ Прибыль: <strong>${profit.profit.toLocaleString()}₸</strong> | Маржа: <strong>${profit.margin}%</strong></div>`
+                    : `<div class="warning-box">⚠️ ${profit.warning}</div>`;
+                
+                html += `
+                    <div class="profit-grid">
+                        <div class="profit-item">
+                            <div class="profit-label">Цена на Kaspi</div>
+                            <div class="profit-value">${profit.selling_price.toLocaleString()}₸</div>
+                        </div>
+                        <div class="profit-item">
+                            <div class="profit-label">Закупка</div>
+                            <div class="profit-value">${profit.cost_price.toLocaleString()}₸</div>
+                        </div>
+                        <div class="profit-item">
+                            <div class="profit-label">Комиссия Kaspi (15%)</div>
+                            <div class="profit-value" style="color: #ef4444;">-${profit.commission.toLocaleString()}₸</div>
+                        </div>
+                        <div class="profit-item">
+                            <div class="profit-label">Чистая прибыль</div>
+                            <div class="profit-value ${isProfitable ? 'positive' : 'negative'}">
+                                ${isProfitable ? '+' : ''}${profit.profit.toLocaleString()}₸
+                            </div>
+                        </div>
+                    </div>
+                    <div class="market-data">
+                        <h4 style="font-size: 13px; color: #9ca3af; margin-bottom: 12px;">📊 Анализ рынка</h4>
+                        <div class="market-row"><span>Минимальная цена на Kaspi</span><span style="color: #f97316; font-weight: 600;">${market.min_price.toLocaleString()}₸</span></div>
+                        <div class="market-row"><span>Средняя цена на Kaspi</span><span style="color: #f97316; font-weight: 600;">${market.avg_price.toLocaleString()}₸</span></div>
+                        <div class="market-row"><span>Рекомендуемая цена</span><span style="color: #10b981; font-weight: 600;">${market.recommended_price.toLocaleString()}₸</span></div>
+                        <div class="market-row"><span>Конкурентов в нише</span><span style="color: #9ca3af; font-weight: 600;">${market.competitors_count}</span></div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('primary_result').innerHTML = html;
+            
+            if (alternatives.length > 0) {
+                let altHTML = '';
+                alternatives.forEach(alt => {
+                    altHTML += `<div class="alt-item"><span>${alt.name}</span><span class="alt-price">${alt.price.toLocaleString()}₸</span></div>`;
+                });
+                document.getElementById('alternatives_list').innerHTML = altHTML;
+                document.getElementById('alternatives_section').style.display = 'block';
+            }
+            
+            document.getElementById('results').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
