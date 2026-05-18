@@ -21,25 +21,19 @@
         .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
         .results { grid-column: 1 / -1; display: none; }
         .result-card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #f97316; }
-        .ai-box { background: rgba(249, 115, 22, 0.1); border: 1px solid #f97316; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
-        .ai-box h4 { color: #f97316; margin-bottom: 10px; font-size: 14px; }
-        .ai-verdict { font-size: 18px; font-weight: 700; color: #f97316; margin-bottom: 8px; }
-        .ai-text { font-size: 13px; color: #d1d5db; line-height: 1.6; margin-bottom: 8px; }
         .profit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .profit-item { background: #1e2a3a; padding: 12px; border-radius: 6px; }
         .profit-label { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
         .profit-value { font-size: 16px; font-weight: 700; color: #f97316; }
         .profit-value.positive { color: #10b981; }
         .profit-value.negative { color: #ef4444; }
-        .market-data { background: #1e2a3a; padding: 16px; border-radius: 6px; margin-top: 16px; }
-        .market-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #0f1419; font-size: 13px; }
+        .warning-banner { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 12px; margin-bottom: 12px; color: #fca5a5; font-size: 12px; }
         .loader { display: none; text-align: center; padding: 20px; }
         .spinner { border: 3px solid #1e2a3a; border-top: 3px solid #f97316; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .status-box { padding: 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
-        .status-breakeven { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #fca5a5; }
-        .status-warning { background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #fcd34d; }
-        .status-success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #a7f3d0; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .status-box { background: #1e2a3a; padding: 12px; border-radius: 6px; border-left: 4px solid #f97316; }
+        .tactic-box { background: rgba(249, 115, 22, 0.1); border: 1px solid #f97316; border-radius: 6px; padding: 16px; margin-top: 16px; }
     </style>
 </head>
 <body>
@@ -48,64 +42,85 @@
             <h1>📊 MarketAnalyst.kz</h1>
             <div style="text-align: right; font-size: 14px; color: #9ca3af;">
                 <div>Личный кабинет продавца</div>
-                <div style="font-size: 12px; margin-top: 4px;">Анализ конкуренции и прибыли</div>
+                <div style="font-size: 12px; margin-top: 4px;">Тактика против демпинга</div>
             </div>
         </div>
         
         <div class="main-content">
             <div class="card">
-                <h2>🔍 Анализ товара</h2>
+                <h2>🎯 Анализ конкуренции</h2>
                 <div class="form-group">
                     <label>Название товара</label>
                     <input type="text" id="product_name" placeholder="Apple iPhone 15 Pro">
                 </div>
                 <div class="form-group">
                     <label>Закупочная цена (₸)</label>
-                    <input type="number" id="cost_price" placeholder="750000">
+                    <input type="number" id="cost_price" placeholder="700000">
                 </div>
                 <div class="form-group">
                     <label>ВАША цена на Kaspi (₸)</label>
-                    <input type="number" id="selling_price" placeholder="900000">
+                    <input type="number" id="selling_price" placeholder="950000">
                 </div>
                 <div class="form-group">
                     <label>Цена ГЛАВНОГО конкурента (₸)</label>
-                    <input type="number" id="competitor_price" placeholder="850000">
+                    <input type="number" id="competitor_price" placeholder="849999">
                 </div>
-                <button class="btn" onclick="searchProduct()">Анализировать</button>
+                <button class="btn" onclick="analyze()">Анализировать</button>
                 <div class="loader" id="loader">
                     <div class="spinner"></div>
-                    <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Анализируем...</div>
+                    <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Считаю...</div>
                 </div>
             </div>
             
             <div class="card">
-                <h2>💡 Как работает</h2>
+                <h2>💡 Как это работает</h2>
                 <div style="font-size: 13px; color: #d1d5db; line-height: 1.8;">
-                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите ваши данные</strong><br>Закупка, ваша цена и цена конкурента</p>
-                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">2. Система считает реальную прибыль</strong><br>С учётом налогов, комиссии, доставки</p>
-                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. AI даёт рекомендацию</strong><br>Менять цену или нет, на сколько</p>
-                    <p><strong style="color: #f97316;">4. Получите стратегию</strong><br>Как удержать позицию в выдаче</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите данные</strong><br>Ваша цена и цена конкурента</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">2. Система считает реальные расходы</strong><br>Налог 3%, комиссия 15%, доставка</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. Прогноз если упасть за конкурентом</strong><br>Вы увидите убыток, если будет демпинг</p>
+                    <p><strong style="color: #f97316;">4. Тактическое решение</strong><br>Держать или менять цену</p>
                 </div>
             </div>
             
             <div class="card results" id="results">
-                <h2>📈 Анализ карточки</h2>
-                <div id="status_section"></div>
-                <div id="breakeven_section"></div>
-                <div id="profit_section"></div>
-                <div id="tactic_section"></div>
+                <h2>📊 АНАЛИЗ КАРТОЧКИ</h2>
+                
+                <div class="status-grid">
+                    <div class="status-box">
+                        <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">Ваша цена / Конкурент</div>
+                        <div id="price_compare" style="font-size: 16px; font-weight: 700;"></div>
+                        <div id="status_indicator" style="font-size: 11px; margin-top: 6px;"></div>
+                    </div>
+                    <div class="status-box">
+                        <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">Точка безубыточности</div>
+                        <div id="breakeven" style="font-size: 16px; font-weight: 700;"></div>
+                        <div id="breakeven_status" style="font-size: 11px; margin-top: 6px;"></div>
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 style="color: #f97316; margin-bottom: 12px;">💰 ПРИБЫЛЬ ПРИ ВАШЕЙ ЦЕНЕ (виртуальная)</h3>
+                    <div class="warning-banner" id="virtual_warning"></div>
+                    <div class="profit-grid" id="virtual_profit"></div>
+                </div>
+                
+                <div class="result-card" id="competitor_forecast">
+                    <h3 style="color: #ef4444; margin-bottom: 12px;">📉 ПРОГНОЗ: ЕСЛИ УПАСТЬ К КОНКУРЕНТУ</h3>
+                    <div class="profit-grid" id="competitor_profit"></div>
+                </div>
+                
+                <div class="tactic-box" id="tactic"></div>
             </div>
         </div>
     </div>
     
     <script>
-        async function searchProduct() {
-            const product_name = document.getElementById('product_name').value.trim();
-            const cost_price = parseInt(document.getElementById('cost_price').value) || 0;
-            const selling_price = parseInt(document.getElementById('selling_price').value) || 0;
-            const competitor_price = parseInt(document.getElementById('competitor_price').value) || 0;
+        function analyze() {
+            const cost = parseInt(document.getElementById('cost_price').value) || 0;
+            const our_price = parseInt(document.getElementById('selling_price').value) || 0;
+            const comp_price = parseInt(document.getElementById('competitor_price').value) || 0;
             
-            if (!product_name || !cost_price || !selling_price) {
+            if (!cost || !our_price || !comp_price) {
                 alert('⚠️ Заполните все поля');
                 return;
             }
@@ -113,151 +128,142 @@
             document.getElementById('loader').style.display = 'block';
             document.getElementById('results').style.display = 'none';
             
-            try {
-                // Расчёт параметров
-                const kaspi_commission = selling_price * 0.15;
-                const tax = selling_price * 0.03;
-                const delivery = 700;
-                const profit = selling_price - kaspi_commission - tax - delivery - cost_price;
-                const margin = (profit / selling_price * 100).toFixed(1);
-                
-                // Точка безубыточности
-                const breakeven = Math.ceil((cost_price + delivery) / (1 - 0.15 - 0.03));
-                
-                displayAnalysis({
-                    product_name,
-                    cost_price,
-                    selling_price,
-                    competitor_price,
-                    profit,
-                    margin,
-                    breakeven,
-                    kaspi_commission: Math.round(kaspi_commission),
-                    tax: Math.round(tax)
-                });
-            } catch (error) {
-                alert('❌ Ошибка: ' + error.message);
-            } finally {
+            setTimeout(() => {
+                displayAnalysis(cost, our_price, comp_price);
                 document.getElementById('loader').style.display = 'none';
-            }
+                document.getElementById('results').style.display = 'block';
+            }, 300);
         }
         
-        function displayAnalysis(data) {
-            const { product_name, cost_price, selling_price, competitor_price, profit, margin, breakeven, kaspi_commission, tax } = data;
+        function displayAnalysis(cost, our_price, comp_price) {
+            // Константы
+            const kaspi_commission_rate = 0.15;
+            const tax_rate = 0.03;
+            const delivery = 700;
+            
+            // Расчёты при НАШЕЙ цене
+            const our_commission = Math.round(our_price * kaspi_commission_rate);
+            const our_tax = Math.round(our_price * tax_rate);
+            const our_profit = our_price - our_commission - our_tax - delivery - cost;
+            const our_margin = ((our_profit / our_price) * 100).toFixed(1);
+            
+            // Расчёты при цене КОНКУРЕНТА
+            const comp_commission = Math.round(comp_price * kaspi_commission_rate);
+            const comp_tax = Math.round(comp_price * tax_rate);
+            const comp_profit = comp_price - comp_commission - comp_tax - delivery - cost;
+            const comp_margin = ((comp_profit / comp_price) * 100).toFixed(1);
+            
+            // Точка безубыточности
+            const breakeven = Math.ceil((cost + delivery) / (1 - kaspi_commission_rate - tax_rate));
             
             // СТАТУС
-            let status_html = `
-                <div class="result-card">
-                    <h3 style="color: #f97316; margin-bottom: 12px;">📊 ТЕКУЩИЙ СТАТУС КАРТОЧКИ</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div class="status-box ${selling_price < competitor_price ? 'status-success' : 'status-warning'}">
-                            <div style="font-size: 11px; color: #9ca3af;">Ваша цена / Конкурент</div>
-                            <div style="font-size: 16px; font-weight: 700;">${selling_price.toLocaleString()}₸ / ${competitor_price.toLocaleString()}₸</div>
-                            <div style="font-size: 11px; margin-top: 4px;">${selling_price < competitor_price ? '🟢 ВЫ ДЕШЕВЛЕ (кнопка ваша!)' : '🔴 ВЫ ДОРОЖЕ (конкурент впереди)'}</div>
-                        </div>
-                        <div class="status-box status-breakeven">
-                            <div style="font-size: 11px; color: #9ca3af;">Точка безубыточности</div>
-                            <div style="font-size: 16px; font-weight: 700;">${breakeven.toLocaleString()}₸</div>
-<div style="font-size: 11px; margin-top: 4px;">${competitor_price < breakeven ? '⚠️ КОНКУРЕНТ НИЖЕ БЕЗУБЫТОЧНОСТИ' : '✅ Конкурент выше безубыточности'}</div>
-                        </div>
-                    </div>
+            document.getElementById('price_compare').innerHTML = `${our_price.toLocaleString()}₸ / ${comp_price.toLocaleString()}₸`;
+            
+            if (our_price < comp_price) {
+                document.getElementById('status_indicator').innerHTML = '🟢 ВЫ ДЕШЕВЛЕ (кнопка ваша!)';
+            } else if (our_price > comp_price) {
+                document.getElementById('status_indicator').innerHTML = '🔴 ВЫ ДОРОЖЕ (конкурент впереди)';
+            } else {
+                document.getElementById('status_indicator').innerHTML = '⚪ РОВНО (зависит от рейтинга)';
+            }
+            
+            // БЕЗУБЫТОЧНОСТЬ
+            document.getElementById('breakeven').innerHTML = breakeven.toLocaleString() + '₸';
+            if (comp_price < breakeven) {
+                document.getElementById('breakeven_status').innerHTML = '⚠️ КОНКУРЕНТ НИЖЕ БЕЗУБЫТОЧНОСТИ';
+            } else {
+                document.getElementById('breakeven_status').innerHTML = '✅ Конкурент выше безубыточности';
+            }
+            
+            // ВИРТУАЛЬНАЯ ПРИБЫЛЬ (при нашей цене)
+            document.getElementById('virtual_warning').innerHTML = '⚠️ Это прибыль в ТЕОРИИ. Вы не получаете её, так как карточку забрал конкурент и покупатели ходят к нему.';
+            
+            document.getElementById('virtual_profit').innerHTML = `
+                <div class="profit-item">
+                    <div class="profit-label">Закупка</div>
+                    <div class="profit-value">${cost.toLocaleString()}₸</div>
+                </div>
+                <div class="profit-item">
+                    <div class="profit-label">Комиссия (15%)</div>
+                    <div class="profit-value" style="color: #ef4444;">-${our_commission.toLocaleString()}₸</div>
+                </div>
+                <div class="profit-item">
+                    <div class="profit-label">Налог ИП (3%)</div>
+                    <div class="profit-value" style="color: #ef4444;">-${our_tax.toLocaleString()}₸</div>
+                </div>
+                <div class="profit-item">
+                    <div class="profit-label">Доставка</div>
+                    <div class="profit-value" style="color: #ef4444;">-700₸</div>
+                </div>
+                <div class="profit-item">
+                    <div class="profit-label">ИТОГО</div>
+                    <div class="profit-value ${our_profit > 0 ? 'positive' : 'negative'}">${our_profit > 0 ? '+' : ''}${our_profit.toLocaleString()}₸</div>
+                </div>
+                <div style="grid-column: 1/-1; padding-top: 8px; border-top: 1px solid #2d3e4f; font-size: 13px; color: #9ca3af;">
+                    <strong>Маржа:</strong> <span style="color: ${our_margin > 20 ? '#10b981' : our_margin > 10 ? '#f59e0b' : '#ef4444'}; font-weight: 700;">${our_margin}%</span>
                 </div>
             `;
             
-            // ПРИБЫЛЬ
-            let profit_html = `
-                <div class="result-card">
-                    <h3 style="color: #f97316; margin-bottom: 12px;">💰 РЕАЛЬНАЯ ПРИБЫЛЬ (с налогами и доставкой)</h3>
-                    <div class="profit-grid">
-                        <div class="profit-item">
-                            <div class="profit-label">Закупка</div>
-                            <div class="profit-value">${cost_price.toLocaleString()}₸</div>
-                        </div>
-                        <div class="profit-item">
-                            <div class="profit-label">Ваша цена</div>
-                            <div class="profit-value" style="color: #10b981;">${selling_price.toLocaleString()}₸</div>
-                        </div>
-                        <div class="profit-item">
-                            <div class="profit-label">Комиссия Kaspi (15%)</div>
-                            <div class="profit-value" style="color: #ef4444;">-${kaspi_commission.toLocaleString()}₸</div>
-                        </div>
-                        <div class="profit-item">
-                            <div class="profit-label">Налог ИП (3%)</div>
-                            <div class="profit-value" style="color: #ef4444;">-${tax.toLocaleString()}₸</div>
-                        </div>
-                        <div class="profit-item">
-                            <div class="profit-label">Доставка</div>
-                            <div class="profit-value" style="color: #ef4444;">-700₸</div>
-                        </div>
-                        <div class="profit-item">
-                            <div class="profit-label">ЧИСТАЯ ПРИБЫЛЬ</div>
-                            <div class="profit-value ${profit > 0 ? 'positive' : 'negative'}">${profit > 0 ? '+' : ''}${profit.toLocaleString()}₸</div>
-                        </div>
-                        <div style="grid-column: 1/-1; padding-top: 8px; border-top: 1px solid #1e2a3a; font-size: 13px; color: #9ca3af;">
-                            <strong>Маржа:</strong> <span style="color: ${margin > 20 ? '#10b981' : margin > 10 ? '#f59e0b' : '#ef4444'}; font-weight: 700;">${margin}%</span>
-                        </div>
-                    </div>
+            // ПРОГНОЗ при цене конкурента
+            document.getElementById('competitor_profit').innerHTML = `
+                <div class="profit-item">
+                    <div class="profit-label">Закупка</div>
+                    <div class="profit-value">${cost.toLocaleString()}₸</div>
+                </div>
+                <div class="profit-item">
+                    <div class="profit-label">Комиссия (15%)</div>
+                    <div class="profit-value" style="color: #ef4444;">-${comp_commission.toLocaleString()}₸</div>
+                </div>
+                <div class="profit-item">
+                    <div class="profit-label">Налог ИП (3%)</div>
+                    <div class="profit-value" style="color: #ef4444;">-${comp_tax.toLocaleString()}₸</div>
+                </div>
+                <div class="profit-item">
+                    <div class="profit-label">Доставка</div>
+                    <div class="profit-value" style="color: #ef4444;">-700₸</div>
+                </div>
+                <div class="profit-item">
+                    <div class="profit-label">ИТОГО</div>
+                    <div class="profit-value ${comp_profit > 0 ? 'positive' : 'negative'}">${comp_profit > 0 ? '+' : ''}${comp_profit.toLocaleString()}₸</div>
+                </div>
+                <div style="grid-column: 1/-1; padding-top: 8px; border-top: 1px solid #2d3e4f; font-size: 13px; color: #9ca3af;">
+                    <strong>Маржа:</strong> <span style="color: ${comp_margin > 0 ? '#10b981' : '#ef4444'}; font-weight: 700;">${comp_margin}%</span>
                 </div>
             `;
             
             // ТАКТИКА
-            let tactic_html = getTacticAnalysis(selling_price, competitor_price, breakeven, profit, cost_price);
-            
-            document.getElementById('status_section').innerHTML = status_html;
-            document.getElementById('profit_section').innerHTML = profit_html;
-            document.getElementById('tactic_section').innerHTML = tactic_html;
-            
-            document.getElementById('results').style.display = 'block';
+            let tactic_html = getTactic(our_price, comp_price, breakeven, comp_profit, cost);
+            document.getElementById('tactic').innerHTML = tactic_html;
         }
         
-        function getTacticAnalysis(our_price, comp_price, breakeven, profit, cost_price) {
+        function getTactic(our_price, comp_price, breakeven, comp_profit, cost) {
             let verdict = '';
             let recommendation = '';
             let color = '';
             
             if (comp_price < breakeven) {
-                // Конкурент ниже нашего нуля
                 verdict = '⚠️ СТОП-ДЕМПИНГ / ОЖИДАНИЕ';
-                recommendation = `Конкурент опустил цену ниже вашей точки безубыточности (${breakeven}₸). НЕ СЛЕДУЙТЕ ЗА НИМ - уйдёте в убыток. Совет: держите цену в плюсе и ждите, пока у конкурента закончится товар.`;
+                recommendation = `Конкурент опустил цену <strong>${comp_price.toLocaleString()}₸</strong> ниже вашей безубыточности <strong>${breakeven.toLocaleString()}₸</strong>. Если вы упадёте до его цены, потеряете <strong>${Math.abs(comp_profit).toLocaleString()}₸</strong> на каждой продаже.<br><br>🎯 <strong>Совет:</strong> Держите цену в плюсе. Ждите, пока конкурент закончит товар или поднимет цену.`;
                 color = '#ef4444';
             } else if (our_price > comp_price) {
-                // Мы дороже
-                if (comp_price > breakeven) {
-                    verdict = '🎯 ДЕМПИНГ / ВОЗВРАТ КНОПКИ';
-                    const new_price = comp_price - 50;
-                    const new_profit = new_price - (new_price * 0.15) - (new_price * 0.03) - 700 - cost_price;
-                    recommendation = `Вы ДОРОЖЕ конкурента. Его цена (${comp_price}₸) выше вашего нуля. Совет: снизьте на 50₸ до ${new_price}₸. При этой цене прибыль будет ${new_profit.toLocaleString()}₸. Вы вернёте кнопку "Купить".`;
-                    color = '#f59e0b';
-                } else {
-                    verdict = '⚠️ СТОП-ДЕМПИНГ';
-                    recommendation = `Вы дороже, но конкурент ниже вашего нуля. НЕ СНИЖАЙТЕ цену. Держите текущую позицию и ждите.`;
-                    color = '#ef4444';
-                }
+                verdict = '🎯 ДЕМПИНГ / ВОЗВРАТ КНОПКИ';
+                const new_price = comp_price - 50;
+                const new_profit = new_price - Math.round(new_price * 0.15) - Math.round(new_price * 0.03) - 700 - cost;
+                recommendation = `Вы <strong>дороже конкурента</strong> на <strong>${(our_price - comp_price).toLocaleString()}₸</strong>. Конкурент в плюсе, поэтому есть место для маневра.<br><br>🎯 <strong>Совет:</strong> Снизьте цену на <strong>50₸ до ${new_price.toLocaleString()}₸</strong>. При этой цене прибыль будет <strong>${new_profit > 0 ? '+' : ''}${new_profit.toLocaleString()}₸</strong>, и вы вернёте кнопку "Купить".`;
+                color = '#f59e0b';
             } else {
-                // Мы дешевле
                 verdict = '🚀 УДЕРЖАНИЕ ПОЗИЦИИ';
                 const raised_price = comp_price - 10;
-                const raised_profit = raised_price - (raised_price * 0.15) - (raised_price * 0.03) - 700 - cost_price;
-                recommendation = `Отлично! Вы ДЕШЕВЛЕ конкурента (кнопка ваша). Совет: можно приподнять на 10₸ до ${raised_price}₸. При этом маржа вырастет до ${((raised_profit / raised_price) * 100).toFixed(1)}%, но вы остаётесь в лидере.`;
+                const raised_profit = raised_price - Math.round(raised_price * 0.15) - Math.round(raised_price * 0.03) - 700 - cost;
+                recommendation = `Отлично! Вы <strong>дешевле конкурента</strong>. Кнопка "Купить" ваша, и покупатели идут к вам.<br><br>🎯 <strong>Совет:</strong> Можно приподнять цену на <strong>10₸ до ${raised_price.toLocaleString()}₸</strong> и остаться в лидере. Прибыль увеличится до <strong>${raised_profit.toLocaleString()}₸</strong>.`;
                 color = '#10b981';
             }
             
-            return `
-                <div class="result-card">
-                    <h3 style="color: ${color}; margin-bottom: 12px; font-size: 16px;">${verdict}</h3>
-                    <div style="background: rgba(${color === '#10b981' ? '16, 185, 129' : color === '#f59e0b' ? '245, 158, 11' : '239, 68, 68'}, 0.1); border: 1px solid ${color}; border-radius: 6px; padding: 12px; color: ${color}; font-size: 13px; line-height: 1.6;">
-                        ${recommendation}
-                    </div>
-                </div>
-            `;
+            return `<div style="color: ${color}; font-size: 14px; line-height: 1.8;">
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">${verdict}</div>
+                <div>${recommendation}</div>
+            </div>`;
         }
     </script>
 </body>
 </html>
-EOFHTML
-
-# Копируем на сервер
-cp /tmp/seller_updated.html /root/kaspi/public/seller.html
-systemctl reload nginx
-
-echo "✅ seller.html обновлен с реалистичными расчётами!"
