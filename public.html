@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет - MarketAnalyst.kz</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #060b14 0%, #0f1419 100%); color: #e5e7eb; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 20px 0; border-bottom: 1px solid #1e2a3a; }
+        .header h1 { font-size: 28px; color: #f97316; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; background: #1e2a3a; color: #9ca3af; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .tab-btn.active { background: #f97316; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 24px; }
+        .card h2 { font-size: 18px; margin-bottom: 20px; color: #f97316; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; font-weight: 600; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; font-size: 14px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #f97316; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn { width: 100%; padding: 12px 16px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
+        .upload-area { border: 2px dashed #f97316; border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { background: rgba(249, 115, 22, 0.1); }
+        .upload-area.active { background: rgba(249, 115, 22, 0.2); }
+        .file-input { display: none; }
+        .results { grid-column: 1 / -1; display: none; }
+        .result-card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #f97316; }
+        .profit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .profit-item { background: #1e2a3a; padding: 12px; border-radius: 6px; }
+        .profit-label { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
+        .profit-value { font-size: 16px; font-weight: 700; color: #f97316; }
+        .profit-value.positive { color: #10b981; }
+        .profit-value.negative { color: #ef4444; }
+        .loader { display: none; text-align: center; padding: 20px; }
+        .spinner { border: 3px solid #1e2a3a; border-top: 3px solid #f97316; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .disclaimer { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 12px; margin-top: 24px; color: #fca5a5; font-size: 11px; line-height: 1.6; }
+        .template-btn { background: #1e2a3a; border: 1px solid #2d3e4f; color: #9ca3af; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .template-btn:hover { border-color: #f97316; color: #f97316; }
+        .uploaded-item { background: #1e2a3a; padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 MarketAnalyst.kz</h1>
+            <div style="text-align: right; font-size: 14px; color: #9ca3af;">
+                <div>Личный кабинет продавца</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('manual')">🎯 Одиночный анализ</button>
+            <button class="tab-btn" onclick="switchTab('excel')">📊 Загрузка Excel</button>
+        </div>
+        
+        <div id="manual" class="tab-content active">
+            <div class="main-content">
+                <div class="card">
+                    <h2>🎯 Анализ товара</h2>
+                    <div class="form-group">
+                        <label>Название товара</label>
+                        <input type="text" id="product_name" placeholder="Apple iPhone 15 Pro">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Закупочная цена (₸)</label>
+                            <input type="number" id="cost_price" placeholder="750000">
+                        </div>
+                        <div class="form-group">
+                            <label>ВАША цена (₸)</label>
+                            <input type="number" id="selling_price" placeholder="900000">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Минимальная цена (₸)</label>
+                            <input type="number" id="stop_price" placeholder="870000">
+                        </div>
+                        <div class="form-group">
+                            <label>Доставка (₸)</label>
+                            <input type="number" id="delivery_cost" value="700">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Комиссия Kaspi (%)</label>
+                        <select id="kaspi_commission">
+                            <option value="5">5% (Книги)</option>
+                            <option value="10">10% (Электроника)</option>
+                            <option value="11">11% (Телефоны)</option>
+                            <option value="15" selected>15% (Аксессуары)</option>
+                            <option value="18">18% (Авто)</option>
+                            <option value="22">22% (Другое)</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="analyze()">Анализировать</button>
+                    <div class="loader" id="loader"><div class="spinner"></div></div>
+                </div>
+                <div class="card results" id="manual_results"><div id="manual_result_content"></div></div>
+            </div>
+        </div>
+        
+        <div id="excel" class="tab-content">
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>📊 Загрузка товаров из Excel</h2>
+                <button class="template-btn" onclick="downloadTemplate()">📥 Скачать шаблон Excel</button>
+                <div class="upload-area" id="uploadArea" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('excelFile').click()">
+                    <div style="font-size: 48px;">📁</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #f97316;">Перетащите Excel сюда</div>
+                    <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+                </div>
+                <div class="loader" id="excelLoader"><div class="spinner"></div></div>
+                <div id="uploadedList"></div>
+                <div class="disclaimer">⚠️ Проверяйте финальные цены в Kaspi Pay перед изменением.</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function downloadTemplate() {
+            const data = [
+                ['Название товара', 'Закупочная цена', 'ВАША цена', 'Минимальная цена', 'Доставка', 'Комиссия %', 'Kaspi Жұма'],
+                ['iPhone 15 Pro', 750000, 900000, 870000, 700, 11, 'ДА'],
+                ['Samsung S24', 680000, 820000, 750000, 700, 11, 'НЕТ']
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Товары');
+            XLSX.writeFile(wb, 'MarketAnalyst_Template.xlsx');
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('uploadArea').classList.add('active');
+        }
+        
+        function handleDragLeave(e) {
+            document.getElementById('uploadArea').classList.remove('active');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('uploadArea').classList.remove('active');
+            if (e.dataTransfer.files.length > 0) processExcel(e.dataTransfer.files[0]);
+        }
+        
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) processExcel(e.target.files[0]);
+        }
+        
+        function processExcel(file) {
+            document.getElementById('excelLoader').style.display = 'block';
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(worksheet);
+                analyzeExcel(rows);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function analyzeExcel(rows) {
+            let html = '';
+            rows.forEach(row => {
+                const cost = parseInt(row['Закупочная цена']) || 0;
+                const our = parseInt(row['ВАША цена']) || 0;
+                const delivery = parseInt(row['Доставка']) || 700;
+                const commission = parseFloat(row['Комиссия %']) || 15;
+                const profit = our - Math.round(our * (commission / 100)) - Math.round(our * 0.03) - delivery - cost;
+                const margin = ((profit / our) * 100).toFixed(1);
+                let status = profit < 0 ? '❌ УБЫТОК' : margin < 15 ? '⚠️ НИЗКО' : '✅ OK';
+                html += `
+                    <div class="uploaded-item">
+                        <div><div style="font-weight: 600; color: #f3f4f6;">${row['Название товара']}</div>
+                        <div style="font-size: 12px; color: #9ca3af;">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div></div>
+                        <div style="color: ${profit < 0 ? '#ef4444' : '#10b981'}; font-weight: 700;">${status}</div>
+                    </div>
+                `;
+            });
+            document.getElementById('uploadedList').innerHTML = html;
+            document.getElementById('excelLoader').style.display = 'none';
+        }
+        
+        function analyze() {
+            const cost = parseInt(document.getElementById('cost_price').value) || 0;
+            const our_price = parseInt(document.getElementById('selling_price').value) || 0;
+            const commission = parseFloat(document.getElementById('kaspi_commission').value) || 15;
+            const delivery = parseInt(document.getElementById('delivery_cost').value) || 700;
+            
+            if (!cost || !our_price) { alert('Заполните цены'); return; }
+            
+            const comm = Math.round(our_price * (commission / 100));
+            const tax = Math.round(our_price * 0.03);
+            const profit = our_price - comm - tax - delivery - cost;
+            const margin = ((profit / our_price) * 100).toFixed(1);
+            
+            let html = `<div class="result-card">`;
+            if (profit < 0) {
+                html += `<div style="background: rgba(239, 68, 68, 0.1); padding: 12px; border-radius: 6px; color: #fca5a5;">❌ УБЫТОК: ${Math.abs(profit).toLocaleString()}₸</div>`;
+            } else {
+                html += `<div style="background: rgba(16, 185, 129, 0.1); padding: 12px; border-radius: 6px; color: #a7f3d0;">✅ Прибыль: ${profit.toLocaleString()}₸ (маржа ${margin}%)</div>`;
+            }
+            html += `<div class="profit-grid" style="margin-top: 12px;">
+                <div class="profit-item"><div class="profit-label">Закупка</div><div class="profit-value">${cost.toLocaleString()}₸</div></div>
+                <div class="profit-item"><div class="profit-label">Ваша цена</div><div class="profit-value" style="color: #10b981;">${our_price.toLocaleString()}₸</div></div>
+                <div class="profit-item"><div class="profit-label">Комиссия (${commission}%)</div><div class="profit-value" style="color: #ef4444;">-${comm.toLocaleString()}₸</div></div>
+                <div class="profit-item"><div class="profit-label">Налог (3%)</div><div class="profit-value" style="color: #ef4444;">-${tax.toLocaleString()}₸</div></div>
+                <div class="profit-item"><div class="profit-label">Доставка</div><div class="profit-value" style="color: #ef4444;">-${delivery.toLocaleString()}₸</div></div>
+                <div class="profit-item"><div class="profit-label">ПРИБЫЛЬ</div><div class="profit-value ${profit > 0 ? 'positive' : 'negative'}">${profit > 0 ? '+' : ''}${profit.toLocaleString()}₸</div></div>
+            </div></div>`;
+            
+            document.getElementById('manual_results').style.display = 'block';
+            document.getElementById('manual_result_content').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
