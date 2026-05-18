@@ -7,371 +7,201 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #060b14 0%, #0f1419 100%); color: #e5e7eb; min-height: 100vh; padding: 20px; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 20px 0; border-bottom: 1px solid #1e2a3a; }
-        .header h1 { font-size: 28px; color: #f97316; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { padding: 10px 20px; background: #1e2a3a; color: #9ca3af; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        .tab-btn.active { background: #f97316; color: white; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        .card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 24px; }
-        .card h2 { font-size: 18px; margin-bottom: 20px; color: #f97316; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; font-weight: 600; }
-        .form-group input, .form-group select { width: 100%; padding: 10px 12px; background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; font-size: 14px; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #f97316; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .btn { width: 100%; padding: 12px 16px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
-        .upload-area { border: 2px dashed #f97316; border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1419; color: #e5e7eb; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 32px; color: #f97316; }
+        .card { background: #1a2332; border: 1px solid #2d3e4f; border-radius: 12px; padding: 30px; margin-bottom: 20px; }
+        .card h2 { color: #f97316; margin-bottom: 20px; font-size: 20px; }
+        .upload-area { border: 2px dashed #f97316; border-radius: 12px; padding: 50px; text-align: center; cursor: pointer; transition: all 0.3s; }
         .upload-area:hover { background: rgba(249, 115, 22, 0.1); }
-        .upload-area.active { background: rgba(249, 115, 22, 0.2); }
         .file-input { display: none; }
-        .results { grid-column: 1 / -1; display: none; }
-        .result-card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #f97316; }
-        .profit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .profit-item { background: #1e2a3a; padding: 12px; border-radius: 6px; }
-        .profit-label { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
-        .profit-value { font-size: 16px; font-weight: 700; color: #f97316; }
-        .profit-value.positive { color: #10b981; }
-        .profit-value.negative { color: #ef4444; }
-        .loader { display: none; text-align: center; padding: 20px; }
-        .spinner { border: 3px solid #1e2a3a; border-top: 3px solid #f97316; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
+        .btn { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
+        .btn-block { width: 100%; padding: 14px; margin-top: 16px; }
+        .item { background: #0f1419; padding: 14px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .item-info { flex: 1; }
+        .item-name { font-weight: 600; color: #f3f4f6; }
+        .item-details { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+        .status { font-weight: 700; }
+        .ok { color: #10b981; }
+        .low { color: #f59e0b; }
+        .error { color: #ef4444; }
+        .results { margin-top: 20px; }
+        .loader { text-align: center; padding: 20px; display: none; }
+        .spinner { border: 3px solid #2d3e4f; border-top: 3px solid #f97316; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .disclaimer { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 12px; margin-top: 24px; color: #fca5a5; font-size: 11px; line-height: 1.6; }
-        .template-btn { background: #1e2a3a; border: 1px solid #2d3e4f; color: #9ca3af; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-        .template-btn:hover { border-color: #f97316; color: #f97316; }
-        .uploaded-list { margin-top: 20px; }
-        .uploaded-item { background: #1e2a3a; padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📊 MarketAnalyst.kz</h1>
-            <div style="text-align: right; font-size: 14px; color: #9ca3af;">
-                <div>Личный кабинет продавца</div>
-                <div style="font-size: 12px; margin-top: 4px;">Анализ конкуренции и прибыли</div>
+            <p style="color: #9ca3af; margin-top: 8px;">Загрузи товары и получи рекомендации по ценам</p>
+        </div>
+        
+        <div class="card">
+            <h2>📥 Загрузка товаров из Excel</h2>
+            
+            <button class="btn" onclick="downloadTemplate()" style="margin-bottom: 20px;">📥 Скачать шаблон Excel</button>
+            
+            <div class="upload-area" id="uploadArea" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('excelFile').click()">
+                <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+                <div style="font-size: 18px; font-weight: 600; color: #f97316; margin-bottom: 4px;">Перетащите Excel сюда</div>
+                <div style="font-size: 13px; color: #9ca3af;">или нажмите чтобы выбрать файл</div>
+                <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
             </div>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('manual')">🎯 Одиночный анализ</button>
-            <button class="tab-btn" onclick="switchTab('excel')">📊 Загрузка Excel</button>
-        </div>
-        
-        <!-- ===== ВКЛАДКА 1: ОДИНОЧНЫЙ АНАЛИЗ ===== -->
-        <div id="manual" class="tab-content active">
-            <div class="main-content">
-                <div class="card">
-                    <h2>🎯 Анализ товара</h2>
-                    
-                    <div class="form-group">
-                        <label>Название товара</label>
-                        <input type="text" id="product_name" placeholder="Apple iPhone 15 Pro">
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Закупочная цена (₸)</label>
-                            <input type="number" id="cost_price" placeholder="750000">
-                        </div>
-                        <div class="form-group">
-                            <label>ВАША цена (₸)</label>
-                            <input type="number" id="selling_price" placeholder="900000">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Минимальная цена (₸)</label>
-                            <input type="number" id="stop_price" placeholder="870000">
-                        </div>
-                        <div class="form-group">
-                            <label>Доставка (₸)</label>
-                            <input type="number" id="delivery_cost" value="700" placeholder="700">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Комиссия Kaspi (%)</label>
-                        <select id="kaspi_commission">
-                            <option value="5">5% (Неэлектроника, книги)</option>
-                            <option value="10">10% (Электроника)</option>
-                            <option value="11">11% (Мобильные телефоны)</option>
-                            <option value="15" selected>15% (Аксессуары, стандарт)</option>
-                            <option value="18">18% (Автотовары)</option>
-                            <option value="22">22% (Другое)</option>
-                        </select>
-                    </div>
-                    
-                    <button class="btn" onclick="analyze()">Анализировать</button>
-                    
-                    <div class="loader" id="loader">
-                        <div class="spinner"></div>
-                        <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Анализируем...</div>
-                    </div>
-                    
-                    <div class="disclaimer">
-                        ⚠️ <strong>Дисклеймер:</strong> Сервис предоставляет расчеты на основе парсинга открытых данных Kaspi.kz. Проверяйте финальные цены в кабинете Kaspi Pay перед изменением. Сервис не несет ответственности за финансовые убытки.
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h2>💡 Как это работает</h2>
-                    <div style="font-size: 13px; color: #d1d5db; line-height: 1.8;">
-                        <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите параметры товара</strong><br>Цены, комиссия, доставка, минимум</p>
-                        <p style="margin-bottom: 12px;"><strong style="color: #f97316;">2. Выберите категорию</strong><br>Комиссия Kaspi зависит от типа товара</p>
-                        <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. Получите анализ</strong><br>Система рассчитает реальную прибыль</p>
-                        <p><strong style="color: #f97316;">4. Улучшайте маржу</strong><br>На основе рекомендаций системы</p>
-                    </div>
-                </div>
-                
-                <div class="card results" id="manual_results">
-                    <h2>📈 Результаты анализа</h2>
-                    <div id="manual_result_content"></div>
-                </div>
+            
+            <div class="loader" id="loader">
+                <div class="spinner"></div>
+                <div style="margin-top: 12px; color: #9ca3af;">Обработка файла...</div>
             </div>
-        </div>
-        
-        <!-- ===== ВКЛАДКА 2: ЗАГРУЗКА EXCEL ===== -->
-        <div id="excel" class="tab-content">
-            <div class="card" style="grid-column: 1 / -1;">
-                <h2>📊 Загрузка товаров из Excel</h2>
-                
-                <div style="margin-bottom: 20px;">
-                    <button class="template-btn" onclick="downloadTemplate()">📥 Скачать шаблон Excel</button>
-                    <div style="font-size: 12px; color: #9ca3af; margin-top: 8px;">Заполните шаблон своими товарами и загрузите обратно</div>
-                </div>
-                
-                <div class="upload-area" id="uploadArea" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('excelFile').click()">
-                    <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
-                    <div style="font-size: 16px; font-weight: 600; color: #f97316; margin-bottom: 5px;">Перетащите файл Excel сюда</div>
-                    <div style="font-size: 13px; color: #9ca3af;">или нажмите чтобы выбрать файл</div>
-                    <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
-                </div>
-                
-                <div class="loader" id="excelLoader">
-                    <div class="spinner"></div>
-                    <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Обработка товаров...</div>
-                </div>
-                
-                <div class="uploaded-list" id="uploadedList"></div>
-                
-                <div class="results" id="excel_results" style="grid-column: 1 / -1;">
-                    <div id="excel_result_content"></div>
-                </div>
-                
-                <div class="disclaimer" style="margin-top: 20px;">
-                    ⚠️ <strong>Дисклеймер:</strong> Сервис предоставляет расчеты на основе парсинга открытых данных Kaspi.kz. Проверяйте финальные цены в кабинете Kaspi Pay перед изменением. Сервис не несет ответственности за финансовые убытки, связанные с действиями конкурентов, ошибками округления или изменениями политики Kaspi.
-                </div>
+            
+            <div class="results" id="results">
+                <h3 style="color: #f97316; margin-bottom: 12px;">✅ Загруженные товары:</h3>
+                <div id="itemsList"></div>
+                <button class="btn btn-block" id="saveBtn" onclick="saveAllProducts()">💾 Сохранить товары</button>
             </div>
         </div>
     </div>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-        // ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(tab).classList.add('active');
-            event.target.classList.add('active');
-        }
+        let allProducts = [];
         
-        // СКАЧИВАНИЕ ШАБЛОНА
         function downloadTemplate() {
             const data = [
-                ['Название товара', 'Закупочная цена', 'ВАША цена', 'Минимальная цена', 'Доставка (₸)', 'Комиссия Kaspi (%)', 'Kaspi Жұма'],
+                ['Название товара', 'Закупочная цена', 'ВАША цена', 'Минимальная цена', 'Доставка', 'Комиссия %', 'Kaspi Жұма'],
                 ['Apple iPhone 15 Pro', 750000, 900000, 870000, 700, 11, 'ДА'],
-                ['Samsung Galaxy S24', 680000, 820000, 750000, 700, 11, 'ДА'],
+                ['Samsung Galaxy S24', 680000, 820000, 750000, 700, 11, 'НЕТ'],
                 ['Corsair M65 RGB', 25000, 45000, 40000, 700, 15, 'НЕТ']
             ];
-            
             const ws = XLSX.utils.aoa_to_sheet(data);
-            ws['!cols'] = [{wch: 25}, {wch: 18}, {wch: 15}, {wch: 18}, {wch: 15}, {wch: 18}, {wch: 12}];
-            
+            ws['!cols'] = [{wch: 25}, {wch: 18}, {wch: 15}, {wch: 18}, {wch: 15}, {wch: 15}, {wch: 12}];
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Товары');
             XLSX.writeFile(wb, 'MarketAnalyst_Template.xlsx');
         }
         
-        // ЗАГРУЗКА ФАЙЛА
         function handleDragOver(e) {
             e.preventDefault();
-            document.getElementById('uploadArea').classList.add('active');
+            document.getElementById('uploadArea').style.background = 'rgba(249, 115, 22, 0.15)';
         }
         
         function handleDragLeave(e) {
-            document.getElementById('uploadArea').classList.remove('active');
+            document.getElementById('uploadArea').style.background = '';
         }
         
         function handleDrop(e) {
             e.preventDefault();
-            document.getElementById('uploadArea').classList.remove('active');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) processExcel(files[0]);
+            document.getElementById('uploadArea').style.background = '';
+            if (e.dataTransfer.files.length > 0) {
+                processExcel(e.dataTransfer.files[0]);
+            }
         }
         
         function handleFileSelect(e) {
-            if (e.target.files.length > 0) processExcel(e.target.files[0]);
+            if (e.target.files.length > 0) {
+                processExcel(e.target.files[0]);
+            }
         }
         
         function processExcel(file) {
-            document.getElementById('excelLoader').style.display = 'block';
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
             
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(worksheet);
-                
-                analyzeExcel(rows);
+            reader.onload = (event) => {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    allProducts = rows;
+                    displayProducts(rows);
+                } catch (err) {
+                    alert('❌ Ошибка при чтении файла: ' + err.message);
+                }
+                document.getElementById('loader').style.display = 'none';
             };
             reader.readAsArrayBuffer(file);
         }
         
-        function analyzeExcel(rows) {
-            const results = [];
+        function displayProducts(products) {
             let html = '';
             
-            rows.forEach((row, idx) => {
-                const cost = parseInt(row['Закупочная цена']) || 0;
-                const our = parseInt(row['ВАША цена']) || 0;
-                const stop = parseInt(row['Минимальная цена']) || 0;
-                const delivery = parseInt(row['Доставка (₸)']) || 700;
-                const commission = parseFloat(row['Комиссия Kaspi (%)']) || 15;
-                const is_promo = row['Kaspi Жұма'] === 'ДА' || row['Kaspi Жұма'] === 'да';
-                const promo_add = is_promo ? 3 : 0;
-                const total_commission = commission + promo_add;
+            products.forEach(p => {
+                const cost = parseInt(p['Закупочная цена']) || 0;
+                const price = parseInt(p['ВАША цена']) || 0;
+                const delivery = parseInt(p['Доставка']) || 700;
+                const commission = parseFloat(p['Комиссия %']) || 15;
                 
-                const tax_rate = 0.03;
-                const comm = Math.round(our * (total_commission / 100));
-                const tax = Math.round(our * tax_rate);
-                const profit = our - comm - tax - delivery - cost;
-                const margin = ((profit / our) * 100).toFixed(1);
+                const profit = price - Math.round(price * (commission / 100)) - Math.round(price * 0.03) - delivery - cost;
+                const margin = ((profit / price) * 100).toFixed(1);
                 
-                let status = '✅ OK';
-                if (profit < 0) status = '❌ УБЫТОК';
-                else if (margin < 15) status = '⚠️ НИЗКО';
+                let statusText = '';
+                let statusClass = '';
+                
+                if (profit < 0) {
+                    statusText = '❌ УБЫТОК';
+                    statusClass = 'error';
+                } else if (margin < 15) {
+                    statusText = '⚠️ НИЗКО';
+                    statusClass = 'low';
+                } else {
+                    statusText = '✅ OK';
+                    statusClass = 'ok';
+                }
                 
                 html += `
-                    <div class="uploaded-item">
-                        <div>
-                            <div style="font-weight: 600; color: #f3f4f6;">${row['Название товара']}</div>
-                            <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div>
+                    <div class="item">
+                        <div class="item-info">
+                            <div class="item-name">${p['Название товара']}</div>
+                            <div class="item-details">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div>
                         </div>
-                        <div style="text-align: right; color: ${profit < 0 ? '#ef4444' : profit > 0 ? '#10b981' : '#f59e0b'}; font-weight: 700;">${status}</div>
+                        <div class="status ${statusClass}">${statusText}</div>
                     </div>
                 `;
-                
-                results.push({
-                    name: row['Название товара'],
-                    profit: profit,
-                    margin: margin,
-                    status: status
-                });
             });
             
-            document.getElementById('uploadedList').innerHTML = html;
-            document.getElementById('excelLoader').style.display = 'none';
-            
-            // Отправляем результаты на сервер
-            sendExcelToServer(results);
+            document.getElementById('itemsList').innerHTML = html;
+            document.getElementById('results').style.display = 'block';
         }
         
-        function sendExcelToServer(results) {
-            fetch('https://api.marketanalyst.kz/api/seller/analyze-excel', {
+        function saveAllProducts() {
+            if (allProducts.length === 0) {
+                alert('⚠️ Нет товаров для сохранения');
+                return;
+            }
+            
+            document.getElementById('saveBtn').disabled = true;
+            document.getElementById('saveBtn').textContent = '⏳ Сохранение...';
+            
+            fetch('https://api.marketanalyst.kz/api/seller/save-products', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    seller_id: 'current_user',
-                    products: results
+                    seller_id: 'user_' + Date.now(),
+                    products: allProducts
                 })
             })
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'success') {
-                    alert(`✅ Обработано товаров: ${results.length}\n💰 Общая прибыль: ${data.total_profit.toLocaleString()}₸`);
+                    alert(`✅ Отлично! Сохранено товаров: ${data.count}\n\n💬 Система будет анализировать цены каждый день в 02:00 и отправлять рекомендации в Telegram`);
+                    document.getElementById('results').style.display = 'none';
+                    document.getElementById('excelFile').value = '';
+                } else {
+                    alert('❌ Ошибка: ' + data.message);
                 }
             })
-            .catch(err => console.error('Ошибка:', err));
-        }
-        
-        // ОДИНОЧНЫЙ АНАЛИЗ
-        function analyze() {
-            const cost = parseInt(document.getElementById('cost_price').value) || 0;
-            const our_price = parseInt(document.getElementById('selling_price').value) || 0;
-            const stop = parseInt(document.getElementById('stop_price').value) || 0;
-            const delivery = parseInt(document.getElementById('delivery_cost').value) || 700;
-            const commission = parseFloat(document.getElementById('kaspi_commission').value) || 15;
-            
-            if (!cost || !our_price) {
-                alert('⚠️ Заполните закупку и цену');
-                return;
-            }
-            
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('manual_results').style.display = 'none';
-            
-            setTimeout(() => {
-                displayResults(cost, our_price, stop, delivery, commission);
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('manual_results').style.display = 'block';
-            }, 300);
-        }
-        
-        function displayResults(cost, our_price, stop, delivery, commission) {
-            const tax_rate = 0.03;
-            
-            const comm = Math.round(our_price * (commission / 100));
-            const tax = Math.round(our_price * tax_rate);
-            const profit = our_price - comm - tax - delivery - cost;
-            const margin = ((profit / our_price) * 100).toFixed(1);
-            const breakeven = Math.ceil((cost + delivery) / (1 - (commission / 100) - tax_rate));
-            
-            let html = '<div class="result-card">';
-            
-            if (stop > 0 && our_price < stop) {
-                html += `<div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 12px; color: #fca5a5; margin-bottom: 12px;">
-                    ⚠️ Ваша цена ${our_price.toLocaleString()}₸ <strong>ниже минимума ${stop.toLocaleString()}₸</strong>!
-                </div>`;
-            }
-            
-            if (profit < 0) {
-                html += `<div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 12px; color: #fca5a5; margin-bottom: 12px;">
-                    ❌ УБЫТОК: ${Math.abs(profit).toLocaleString()}₸
-                </div>`;
-            } else if (margin < 15) {
-                html += `<div style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; color: #fcd34d; margin-bottom: 12px;">
-                    ⚠️ Низкая маржа ${margin}% - рискованно
-                </div>`;
-            } else {
-                html += `<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 6px; padding: 12px; color: #a7f3d0; margin-bottom: 12px;">
-                    ✅ Прибыль: <strong>${profit.toLocaleString()}₸</strong> (маржа ${margin}%)
-                </div>`;
-            }
-            
-            html += `
-                <div class="profit-grid">
-                    <div class="profit-item"><div class="profit-label">Закупка</div><div class="profit-value">${cost.toLocaleString()}₸</div></div>
-                    <div class="profit-item"><div class="profit-label">Ваша цена</div><div class="profit-value" style="color: #10b981;">${our_price.toLocaleString()}₸</div></div>
-                    <div class="profit-item"><div class="profit-label">Комиссия (${commission}%)</div><div class="profit-value" style="color: #ef4444;">-${comm.toLocaleString()}₸</div></div>
-                    <div class="profit-item"><div class="profit-label">Налог ИП (3%)</div><div class="profit-value" style="color: #ef4444;">-${tax.toLocaleString()}₸</div></div>
-                    <div class="profit-item"><div class="profit-label">Доставка</div><div class="profit-value" style="color: #ef4444;">-${delivery.toLocaleString()}₸</div></div>
-                    <div class="profit-item"><div class="profit-label">ПРИБЫЛЬ</div><div class="profit-value ${profit > 0 ? 'positive' : 'negative'}">${profit > 0 ? '+' : ''}${profit.toLocaleString()}₸</div></div>
-                    <div style="grid-column: 1/-1; padding-top: 8px; border-top: 1px solid #2d3e4f; font-size: 12px; color: #9ca3af;">
-                        <strong>Точка безубыточности:</strong> ${breakeven.toLocaleString()}₸
-                    </div>
-                </div>
-            `;
-            
-            html += '</div>';
-            document.getElementById('manual_result_content').innerHTML = html;
+            .catch(err => {
+                alert('⚠️ Ошибка подключения: ' + err.message);
+            })
+            .finally(() => {
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('saveBtn').textContent = '💾 Сохранить товары';
+            });
         }
     </script>
 </body>
