@@ -90,11 +90,43 @@
     
     <script>
         let allProducts = [];
-        let currentSellerId = 'user_' + Math.random().toString(36).substr(2, 9);
+        let currentSellerId = localStorage.getItem('seller_id');
+        if (!currentSellerId) {
+            currentSellerId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('seller_id', currentSellerId);
+        }
+        
+        // При загрузке страницы - загружаем настройки и товары
+        window.addEventListener('load', () => {
+            console.log('✅ Seller ID:', currentSellerId);
+            
+            // Загружаем время уведомлений
+            fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.notification_hour) {
+                        document.getElementById('notificationHour').value = data.notification_hour;
+                        console.log('⏰ Загружено время:', data.notification_hour + ':00');
+                    }
+                })
+                .catch(err => console.log('Info: настройки не найдены'));
+            
+            // Загружаем товары из БД
+            fetch(`https://api.marketanalyst.kz/api/seller/get-products?seller_id=${currentSellerId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success' && data.products.length > 0) {
+                        allProducts = data.products;
+                        displayProducts(data.products);
+                        console.log('✅ Загружено товаров из БД:', data.products.length);
+                    }
+                })
+                .catch(err => console.log('Info: товары не найдены'));
+        });
         
         function saveNotificationTime() {
             const hour = document.getElementById('notificationHour').value;
-            console.log('💾 Сохраняю время уведомлений:', hour + ':00');
+            console.log('💾 Сохраняю время:', hour + ':00');
             
             fetch('https://api.marketanalyst.kz/api/seller/set-notification-time', {
                 method: 'POST',
@@ -106,17 +138,13 @@
             })
             .then(r => r.json())
             .then(data => {
-                console.log('Response:', data);
                 if (data.status === 'success') {
-                    alert(`✅ Время уведомлений установлено на ${hour}:00`);
+                    alert(`✅ Время установлено на ${hour}:00`);
                 } else {
                     alert('❌ Ошибка: ' + data.message);
                 }
             })
-            .catch(err => {
-                console.error('Error:', err);
-                alert('⚠️ Ошибка подключения');
-            });
+            .catch(err => alert('⚠️ Ошибка: ' + err.message));
         }
         
         function downloadTemplate() {
@@ -162,12 +190,9 @@
                     const workbook = XLSX.read(data, {type: 'array'});
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const rows = XLSX.utils.sheet_to_json(worksheet);
-                    
                     allProducts = rows;
-                    console.log('✅ Загружено товаров:', rows.length);
                     displayProducts(rows);
                 } catch (err) {
-                    console.error('❌ Ошибка Excel:', err);
                     alert('Ошибка: ' + err.message);
                 }
             };
@@ -199,7 +224,6 @@
             
             document.getElementById('itemsList').innerHTML = html;
             document.getElementById('results').style.display = 'block';
-            document.getElementById('successMsg').style.display = 'none';
         }
         
         function saveAllProducts() {
@@ -208,10 +232,8 @@
                 return;
             }
             
-            console.log('📤 Сохраняю товары:', allProducts.length);
             document.getElementById('saveBtn').disabled = true;
             document.getElementById('saveBtn').textContent = '⏳ Сохранение...';
-            
             const hour = document.getElementById('notificationHour').value;
             
             fetch('https://api.marketanalyst.kz/api/seller/save-products', {
@@ -223,12 +245,8 @@
                     notification_hour: parseInt(hour)
                 })
             })
-            .then(r => {
-                console.log('Status:', r.status);
-                return r.json();
-            })
+            .then(r => r.json())
             .then(data => {
-                console.log('Response:', data);
                 if (data.status === 'success') {
                     document.getElementById('successMsg').innerHTML = `✅ Сохранено товаров: ${data.count}! Уведомления в ${hour}:00`;
                     document.getElementById('successMsg').style.display = 'block';
@@ -237,10 +255,7 @@
                     alert('Ошибка: ' + data.message);
                 }
             })
-            .catch(err => {
-                console.error('Fetch error:', err);
-                alert('Ошибка: ' + err.message);
-            })
+            .catch(err => alert('Ошибка: ' + err.message))
             .finally(() => {
                 document.getElementById('saveBtn').disabled = false;
                 document.getElementById('saveBtn').textContent = '💾 Сохранить товары';
