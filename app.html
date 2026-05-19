@@ -1,3 +1,4 @@
+cat > /root/kaspi/public/app.html << 'EOFAPP'
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -14,11 +15,7 @@
         .search-box { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
         .search-input { width: 100%; padding: 12px 16px; background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; font-size: 16px; }
         .search-input:focus { outline: none; border-color: #f97316; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #1e2a3a; }
-        .tab-btn { padding: 12px 20px; background: none; border: none; color: #9ca3af; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; }
-        .tab-btn.active { color: #f97316; border-bottom-color: #f97316; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .search-input:disabled { opacity: 0.5; cursor: not-allowed; }
         .card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 30px; margin-bottom: 20px; }
         .verdict { background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 88, 12, 0.05) 100%); border-left: 4px solid #f97316; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .verdict-title { font-size: 20px; font-weight: 700; color: #f97316; margin-bottom: 12px; }
@@ -34,12 +31,24 @@
         .score-value { color: #f97316; font-weight: 700; }
         .progress-bar { width: 100%; height: 8px; background: #0f1419; border-radius: 4px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #10b981 0%, #f97316 50%, #ef4444 100%); }
-        .loading { text-align: center; padding: 40px; }
-        .spinner { display: inline-block; width: 40px; height: 40px; border: 4px solid #1e2a3a; border-top-color: #f97316; border-radius: 50%; animation: spin 1s linear infinite; }
+        
+        .loading-container { text-align: center; padding: 60px 20px; }
+        .spinner { display: inline-block; width: 50px; height: 50px; border: 4px solid #1e2a3a; border-top-color: #f97316; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { margin-top: 20px; font-size: 16px; color: #9ca3af; }
+        
+        .steps { margin-top: 30px; }
+        .step { display: flex; align-items: center; margin-bottom: 15px; }
+        .step-number { width: 30px; height: 30px; background: #1e2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #f97316; font-weight: bold; margin-right: 15px; }
+        .step-text { color: #d1d5db; font-size: 14px; }
+        .step.active .step-number { background: #f97316; color: white; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
         .advice { background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 16px; border-radius: 8px; margin-top: 20px; color: #a7f3d0; font-size: 13px; line-height: 1.6; }
         .danger { background: rgba(239, 68, 68, 0.1); border-left-color: #ef4444; color: #fca5a5; }
         .warning { background: rgba(245, 158, 11, 0.1); border-left-color: #f59e0b; color: #fcd34d; }
+        
+        .error-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 8px; padding: 20px; color: #fca5a5; }
     </style>
 </head>
 <body>
@@ -50,13 +59,17 @@
         </div>
         
         <div class="search-box">
-            <input type="text" class="search-input" id="searchInput" placeholder="Поиск товара на Kaspi: iPhone 15, термос, ноутбук..." onkeypress="if(event.key==='Enter') searchProduct()">
+            <input type="text" class="search-input" id="searchInput" placeholder="Поиск товара на Kaspi: iPhone 15, Samsung, ноутбук..." onkeypress="if(event.key==='Enter') searchProduct()">
         </div>
         
         <div id="results"></div>
     </div>
     
     <script>
+        let pollingInterval = null;
+        let pollingCount = 0;
+        const MAX_POLLING = 60; // 60 попыток × 2 сек = 2 минуты
+        
         function searchProduct() {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) {
@@ -64,8 +77,13 @@
                 return;
             }
             
-            document.getElementById('results').innerHTML = '<div class="loading"><div class="spinner"></div><p>Анализирую товар...</p></div>';
+            // Блокирую поле ввода
+            document.getElementById('searchInput').disabled = true;
             
+            // Показываю лоадер
+            showLoading(query);
+            
+            // Отправляю запрос на анализ
             fetch('https://api.marketanalyst.kz/analyze', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -74,18 +92,129 @@
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'error') {
-                    document.getElementById('results').innerHTML = `<div class="card"><div class="verdict danger"><div class="verdict-title">❌ Ошибка</div><div class="verdict-text">${data.message}</div></div></div>`;
+                    document.getElementById('results').innerHTML = `<div class="card"><div class="error-box"><strong>❌ Ошибка</strong><br>${data.message}</div></div>`;
+                    document.getElementById('searchInput').disabled = false;
                     return;
                 }
                 
-                displayResults(data);
+                if (data.status === 'processing') {
+                    // Товар парсится в фоне - запускаю polling
+                    startPolling(query);
+                    return;
+                }
+                
+                if (data.status === 'success') {
+                    // Уже в БД - мгновенно показываю
+                    displayResults(data);
+                    document.getElementById('searchInput').disabled = false;
+                    stopPolling();
+                    return;
+                }
             })
             .catch(err => {
-                document.getElementById('results').innerHTML = `<div class="card"><div class="verdict danger"><div class="verdict-title">⚠️ Ошибка подключения</div><div class="verdict-text">${err.message}</div></div></div>`;
+                document.getElementById('results').innerHTML = `<div class="card"><div class="error-box"><strong>❌ Ошибка подключения</strong><br>${err.message}</div></div>`;
+                document.getElementById('searchInput').disabled = false;
+            });
+        }
+        
+        function showLoading(query) {
+            document.getElementById('results').innerHTML = `
+                <div class="card">
+                    <div class="loading-container">
+                        <div class="spinner"></div>
+                        <div class="loading-text">Анализируем '<strong>${query}</strong>' на Kaspi...</div>
+                        <div style="margin-top: 40px; font-size: 14px; color: #6b7280;">
+                            Время: <span id="estimatedTime">8-10 сек</span>
+                        </div>
+                        
+                        <div class="steps" id="steps">
+                            <div class="step active">
+                                <div class="step-number">1</div>
+                                <div class="step-text">Ищем в базе данных</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">2</div>
+                                <div class="step-text">Подключаемся к Kaspi</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">3</div>
+                                <div class="step-text">Парсим конкурентов</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">4</div>
+                                <div class="step-text">Считаем метрики</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function startPolling(query) {
+            console.log(`[POLLING] Начинаю проверку статуса для: ${query}`);
+            pollingCount = 0;
+            
+            pollingInterval = setInterval(() => {
+                pollingCount++;
+                
+                // Обновляю шаг
+                updateStep(Math.min(4, Math.ceil(pollingCount / 5)));
+                
+                // Проверяю статус
+                fetch(`https://api.marketanalyst.kz/analyze/status?query=${encodeURIComponent(query)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log(`[POLLING ${pollingCount}]`, data.status);
+                        
+                        if (data.status === 'ready' || data.status === 'success') {
+                            console.log('[POLLING] ✅ Готово!');
+                            stopPolling();
+                            
+                            // Запрашиваю полный анализ
+                            fetch('https://api.marketanalyst.kz/analyze', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({query: query})
+                            })
+                            .then(r => r.json())
+                            .then(fullData => {
+                                if (fullData.status === 'success') {
+                                    displayResults(fullData);
+                                    document.getElementById('searchInput').disabled = false;
+                                }
+                            });
+                        } else if (pollingCount >= MAX_POLLING) {
+                            console.log('[POLLING] ⏱️ Timeout');
+                            stopPolling();
+                            document.getElementById('results').innerHTML = `<div class="card"><div class="error-box"><strong>⏱️ Время ожидания истекло</strong><br>Попробуй ещё раз</div></div>`;
+                            document.getElementById('searchInput').disabled = false;
+                        }
+                    })
+                    .catch(err => console.log('[POLLING ERROR]', err));
+            }, 2000); // Проверяю каждые 2 сек
+        }
+        
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+        
+        function updateStep(stepNumber) {
+            const steps = document.querySelectorAll('.step');
+            steps.forEach((step, index) => {
+                if (index < stepNumber) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
             });
         }
         
         function displayResults(data) {
+            stopPolling();
+            
             const avgPrice = Math.round((data.min_price + data.max_price) / 2);
             
             let html = `
@@ -98,7 +227,7 @@
                     <div class="stats-grid">
                         <div class="stat-box">
                             <div class="stat-label">ТОВАРОВ В НИШЕ</div>
-                            <div class="stat-value">1</div>
+                            <div class="stat-value">${data.cards_data.total_products}</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">СРЕДНЯЯ ЦЕНА</div>
@@ -165,6 +294,10 @@
                         <br><br>
                         <strong>✅ ДЕЙСТВИЕ:</strong> ${data.action_for_entry}
                     </div>
+                    
+                    <div style="margin-top: 20px; padding: 12px; background: #1e2a3a; border-radius: 8px; font-size: 12px; color: #9ca3af;">
+                        ${data.from_cache ? '💾 Данные из кэша (быстро)' : '⚡ Свежие данные с Kaspi'}
+                    </div>
                 </div>
             `;
             
@@ -177,3 +310,8 @@
     </script>
 </body>
 </html>
+
+
+systemctl reload nginx
+
+echo "✅ app.html обновлен с Polling архитектурой!"
