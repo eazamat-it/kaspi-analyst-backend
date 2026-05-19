@@ -7,33 +7,44 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1419; color: #e5e7eb; padding: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #060b14 0%, #0f1419 100%); color: #e5e7eb; min-height: 100vh; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-        .header h1 { font-size: 32px; color: #f97316; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 20px 0; border-bottom: 1px solid #1e2a3a; }
+        .header h1 { font-size: 28px; color: #f97316; }
         .header a { background: #f97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; }
-        .card { background: #1a2332; border: 1px solid #2d3e4f; border-radius: 12px; padding: 30px; margin-bottom: 20px; }
-        .card h2 { color: #f97316; margin-bottom: 20px; font-size: 20px; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; font-weight: 600; }
-        .form-group input, .form-group select { width: 100%; padding: 10px 12px; background: #0f1419; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #f97316; }
-        .btn { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #1e2a3a; }
+        .tab-btn { padding: 12px 20px; background: none; border: none; color: #9ca3af; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: #f97316; border-bottom-color: #f97316; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 30px; }
+        .card h2 { color: #f97316; margin-bottom: 24px; font-size: 22px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 8px; font-weight: 600; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; font-size: 14px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
+        .btn { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
-        .btn-block { width: 100%; padding: 14px; margin-top: 16px; }
-        .item { background: #0f1419; padding: 14px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .item-name { font-weight: 600; }
+        .btn-full { width: 100%; padding: 14px; margin-top: 20px; }
+        .upload-area { border: 2px dashed #f97316; border-radius: 12px; padding: 60px 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { background: rgba(249, 115, 22, 0.05); }
+        .upload-area.active { background: rgba(249, 115, 22, 0.1); }
+        .file-input { display: none; }
+        .item { background: #1e2a3a; padding: 16px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .item-left { flex: 1; }
+        .item-name { font-weight: 600; color: #f3f4f6; margin-bottom: 4px; }
         .item-details { font-size: 12px; color: #9ca3af; }
         .status { font-weight: 700; }
         .ok { color: #10b981; }
         .low { color: #f59e0b; }
         .error { color: #ef4444; }
         .results { margin-top: 20px; display: none; }
-        .success-msg { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #a7f3d0; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
-        .settings-block { background: #0f1419; border: 1px solid #2d3e4f; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
-        .search-results { background: #0f1419; border: 1px solid #2d3e4f; border-radius: 8px; padding: 12px; margin-top: 8px; max-height: 200px; overflow-y: auto; }
-        .search-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #2d3e4f; }
-        .search-item:hover { background: #1a2332; }
+        .success-msg { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #a7f3d0; padding: 14px; border-radius: 6px; margin-bottom: 20px; }
+        .search-results { background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; padding: 12px; margin-top: 8px; max-height: 200px; overflow-y: auto; display: none; }
+        .search-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #2d3e4f; }
+        .search-item:hover { background: #0f1419; }
+        .search-item-title { font-weight: 600; color: #f3f4f6; }
+        .search-item-price { font-size: 12px; color: #9ca3af; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -43,9 +54,97 @@
             <a href="app.html">← На главную</a>
         </div>
         
-        <div class="card">
-            <h2>⚙️ Настройки уведомлений</h2>
-            <div class="settings-block">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('manual')">📝 Добавить вручную</button>
+            <button class="tab-btn" onclick="switchTab('excel')">📊 Загрузить Excel</button>
+            <button class="tab-btn" onclick="switchTab('settings')">⚙️ Настройки</button>
+        </div>
+        
+        <!-- ВКЛАДКА 1: ВРУЧНУЮ -->
+        <div id="manual" class="tab-content active">
+            <div class="card">
+                <h2>📝 Добавить товар вручную</h2>
+                
+                <div class="form-group">
+                    <label>🔍 Найти товар на Kaspi</label>
+                    <input type="text" id="productSearch" placeholder="Например: iPhone 15 Pro 256GB" oninput="searchKaspiProduct()">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>💰 Закупочная цена (₸)</label>
+                    <input type="number" id="cost_price" placeholder="750000">
+                </div>
+                
+                <div class="form-group">
+                    <label>🏷️ ВАША цена (₸)</label>
+                    <input type="number" id="selling_price" placeholder="900000">
+                </div>
+                
+                <div class="form-group">
+                    <label>📉 Минимальная цена (₸)</label>
+                    <input type="number" id="stop_price" placeholder="870000">
+                </div>
+                
+                <div class="form-group">
+                    <label>🚚 Доставка (₸)</label>
+                    <input type="number" id="delivery_cost" value="700">
+                </div>
+                
+                <div class="form-group">
+                    <label>📊 Комиссия Kaspi (%)</label>
+                    <select id="kaspi_commission">
+                        <option value="5">5% (Книги, неэлектроника)</option>
+                        <option value="10">10% (Электроника)</option>
+                        <option value="11">11% (Мобильные телефоны)</option>
+                        <option value="15" selected>15% (Аксессуары, стандарт)</option>
+                        <option value="18">18% (Автотовары)</option>
+                        <option value="22">22% (Другие категории)</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-full" onclick="addProduct()">➕ Добавить товар</button>
+            </div>
+            
+            <div class="results" id="results_manual">
+                <div class="card" style="margin-top: 20px;">
+                    <div class="success-msg" id="successMsg" style="display:none;"></div>
+                    <h3 style="color: #f97316; margin-bottom: 16px;">✅ Добавленные товары:</h3>
+                    <div id="itemsList"></div>
+                    <button class="btn btn-full" id="saveBtn" onclick="saveAllProducts()">💾 Сохранить все товары</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ВКЛАДКА 2: EXCEL -->
+        <div id="excel" class="tab-content">
+            <div class="card">
+                <h2>📊 Загрузить товары из Excel</h2>
+                
+                <button class="btn" onclick="downloadTemplate()" style="margin-bottom: 20px;">📥 Скачать шаблон Excel</button>
+                
+                <div class="upload-area" id="uploadArea" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('excelFile').click()">
+                    <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+                    <div style="font-size: 18px; font-weight: 600; color: #f97316; margin-bottom: 4px;">Перетащите Excel сюда</div>
+                    <div style="font-size: 13px; color: #9ca3af;">или нажмите чтобы выбрать файл</div>
+                    <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+                </div>
+                
+                <div class="results" id="results_excel" style="display: none;">
+                    <div style="margin-top: 20px;">
+                        <h3 style="color: #f97316; margin-bottom: 16px;">✅ Загруженные товары:</h3>
+                        <div id="itemsList_excel"></div>
+                        <button class="btn btn-full" id="saveBtn_excel" onclick="saveAllProductsExcel()">💾 Сохранить товары</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ВКЛАДКА 3: НАСТРОЙКИ -->
+        <div id="settings" class="tab-content">
+            <div class="card">
+                <h2>⚙️ Настройки уведомлений</h2>
+                
                 <div class="form-group">
                     <label>🔔 Во сколько приходят уведомления в Telegram?</label>
                     <select id="notificationHour">
@@ -63,58 +162,18 @@
                         <option value="22">22:00 (10 вечера)</option>
                     </select>
                 </div>
-                <button class="btn" onclick="saveNotificationTime()" style="width: 100%;">✅ Сохранить время</button>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h2>📥 Добавить товары</h2>
-            
-            <div class="form-group">
-                <label>🔍 Название товара на Kaspi</label>
-                <input type="text" id="productSearch" placeholder="iPhone 17 Pro Max 256GB" oninput="searchKaspiProduct()">
-                <div class="search-results" id="searchResults" style="display: none;"></div>
-            </div>
-            
-            <div class="form-group">
-                <label>Закупочная цена (₸)</label>
-                <input type="number" id="cost_price" placeholder="750000">
-            </div>
-            
-            <div class="form-group">
-                <label>ВАША цена (₸)</label>
-                <input type="number" id="selling_price" placeholder="900000">
-            </div>
-            
-            <div class="form-group">
-                <label>Минимальная цена (₸)</label>
-                <input type="number" id="stop_price" placeholder="870000">
-            </div>
-            
-            <div class="form-group">
-                <label>Доставка (₸)</label>
-                <input type="number" id="delivery_cost" value="700">
-            </div>
-            
-            <div class="form-group">
-                <label>Комиссия Kaspi (%)</label>
-                <select id="kaspi_commission">
-                    <option value="5">5% (Книги)</option>
-                    <option value="10">10% (Электроника)</option>
-                    <option value="11">11% (Телефоны)</option>
-                    <option value="15" selected>15% (Аксессуары)</option>
-                    <option value="18">18% (Авто)</option>
-                    <option value="22">22% (Другое)</option>
-                </select>
-            </div>
-            
-            <button class="btn btn-block" onclick="addProduct()">➕ Добавить товар</button>
-            
-            <div class="results" id="results">
-                <div class="success-msg" id="successMsg" style="display:none;"></div>
-                <h3 style="color: #f97316; margin-bottom: 12px; margin-top: 20px;">✅ Добавленные товары:</h3>
-                <div id="itemsList"></div>
-                <button class="btn btn-block" id="saveBtn" onclick="saveAllProducts()">💾 Сохранить все товары</button>
+                
+                <button class="btn btn-full" onclick="saveNotificationTime()">✅ Сохранить время</button>
+                
+                <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #1e2a3a;">
+                    <h3 style="color: #f97316; margin-bottom: 16px;">📈 Как это работает?</h3>
+                    <div style="font-size: 13px; color: #d1d5db; line-height: 1.8;">
+                        <p style="margin-bottom: 12px;">✅ <strong>Добавляй товары</strong> - вручную или через Excel</p>
+                        <p style="margin-bottom: 12px;">✅ <strong>Выбери время</strong> - когда получать уведомления</p>
+                        <p style="margin-bottom: 12px;">✅ <strong>Система анализирует</strong> - каждый день в выбранное время</p>
+                        <p>✅ <strong>Получай рекомендации</strong> - в Telegram как менять цены</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -129,17 +188,13 @@
         }
         
         window.addEventListener('load', () => {
-            // Загружаем время уведомлений
             fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`)
                 .then(r => r.json())
                 .then(data => {
-                    if (data.notification_hour) {
-                        document.getElementById('notificationHour').value = data.notification_hour;
-                    }
+                    if (data.notification_hour) document.getElementById('notificationHour').value = data.notification_hour;
                 })
-                .catch(err => console.log('Info: настройки не найдены'));
+                .catch(err => console.log('Settings not found'));
             
-            // Загружаем товары
             fetch(`https://api.marketanalyst.kz/api/seller/get-products?seller_id=${currentSellerId}`)
                 .then(r => r.json())
                 .then(data => {
@@ -148,8 +203,15 @@
                         displayProducts(data.products);
                     }
                 })
-                .catch(err => console.log('Info: товары не найдены'));
+                .catch(err => console.log('Products not found'));
         });
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
         
         function searchKaspiProduct() {
             const query = document.getElementById('productSearch').value;
@@ -157,8 +219,6 @@
                 document.getElementById('searchResults').style.display = 'none';
                 return;
             }
-            
-            console.log('🔍 Ищу:', query);
             
             fetch('https://api.marketanalyst.kz/api/analyze', {
                 method: 'POST',
@@ -170,25 +230,221 @@
                 if (data.products && data.products.length > 0) {
                     let html = '';
                     data.products.forEach(p => {
-                        html += `<div class="search-item" onclick="selectProduct('${p.name}', '${p.id}', ${p.min_price})">
-                            <div style="font-weight: 600;">${p.name}</div>
-                            <div style="font-size: 12px; color: #9ca3af;">Цена: ${p.min_price.toLocaleString()}₸ - ${p.max_price.toLocaleString()}₸</div>
+                        html += `<div class="search-item" onclick="selectProduct('${p.name}', '${p.id}')">
+                            <div class="search-item-title">${p.name}</div>
+                            <div class="search-item-price">${p.min_price.toLocaleString()}₸ - ${p.max_price.toLocaleString()}₸ | ${p.sellers_count} продавцов</div>
                         </div>`;
                     });
                     document.getElementById('searchResults').innerHTML = html;
                     document.getElementById('searchResults').style.display = 'block';
-                } else {
-                    document.getElementById('searchResults').style.display = 'none';
                 }
             })
-            .catch(err => console.error('Ошибка поиска:', err));
+            .catch(err => console.error('Search error:', err));
         }
         
-        function selectProduct(name, id, avgPrice) {
+        function selectProduct(name, id) {
             document.getElementById('productSearch').value = name;
             selectedProductId = id;
             document.getElementById('searchResults').style.display = 'none';
-            console.log('✅ Выбран товар:', name, 'ID:', id);
+        }
+        
+        function addProduct() {
+            const name = document.getElementById('productSearch').value;
+            const cost = parseInt(document.getElementById('cost_price').value);
+            const price = parseInt(document.getElementById('selling_price').value);
+            const stop = parseInt(document.getElementById('stop_price').value) || 0;
+            const delivery = parseInt(document.getElementById('delivery_cost').value) || 700;
+            const commission = parseFloat(document.getElementById('kaspi_commission').value);
+            
+            if (!name || !cost || !price) {
+                alert('Заполните обязательные поля: название, закупка, цена');
+                return;
+            }
+            
+            const profit = price - Math.round(price * (commission / 100)) - Math.round(price * 0.03) - delivery - cost;
+            
+            allProducts.push({
+                'Название товара': name,
+                'Закупочная цена': cost,
+                'ВАША цена': price,
+                'Минимальная цена': stop,
+                'Доставка': delivery,
+                'Комиссия %': commission,
+                'profit': profit
+            });
+            
+            displayProducts(allProducts);
+            document.getElementById('productSearch').value = '';
+            document.getElementById('cost_price').value = '';
+            document.getElementById('selling_price').value = '';
+            document.getElementById('stop_price').value = '';
+            selectedProductId = null;
+        }
+        
+        function displayProducts(products) {
+            let html = '';
+            products.forEach(p => {
+                const cost = p['Закупочная цена'];
+                const price = p['ВАША цена'];
+                const delivery = p['Доставка'] || 700;
+                const commission = p['Комиссия %'];
+                const profit = p.profit || (price - Math.round(price * (commission / 100)) - Math.round(price * 0.03) - delivery - cost);
+                const margin = ((profit / price) * 100).toFixed(1);
+                const status = profit < 0 ? '❌ УБЫТОК' : margin < 15 ? '⚠️ НИЗКО' : '✅ OK';
+                const statusClass = profit < 0 ? 'error' : margin < 15 ? 'low' : 'ok';
+                
+                html += `<div class="item">
+                    <div class="item-left">
+                        <div class="item-name">${p['Название товара']}</div>
+                        <div class="item-details">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div>
+                    </div>
+                    <div class="status ${statusClass}">${status}</div>
+                </div>`;
+            });
+            
+            document.getElementById('itemsList').innerHTML = html;
+            document.getElementById('results_manual').style.display = 'block';
+        }
+        
+        function saveAllProducts() {
+            if (allProducts.length === 0) {
+                alert('Нет товаров для сохранения');
+                return;
+            }
+            
+            document.getElementById('saveBtn').disabled = true;
+            document.getElementById('saveBtn').textContent = '⏳ Сохранение...';
+            const hour = document.getElementById('notificationHour').value;
+            
+            fetch('https://api.marketanalyst.kz/api/seller/save-products', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({seller_id: currentSellerId, products: allProducts, notification_hour: parseInt(hour)})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('successMsg').innerHTML = `✅ Отлично! Сохранено товаров: ${data.count}. Система будет анализировать цены каждый день в ${hour}:00 и отправлять рекомендации в Telegram.`;
+                    document.getElementById('successMsg').style.display = 'block';
+                    allProducts = [];
+                    document.getElementById('itemsList').innerHTML = '';
+                } else {
+                    alert('❌ Ошибка: ' + data.message);
+                }
+            })
+            .catch(err => alert('⚠️ Ошибка: ' + err.message))
+            .finally(() => {
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('saveBtn').textContent = '💾 Сохранить все товары';
+            });
+        }
+        
+        function downloadTemplate() {
+            const data = [
+                ['Название товара', 'Закупочная цена', 'ВАША цена', 'Минимальная цена', 'Доставка', 'Комиссия %', 'Kaspi Жұма'],
+                ['Apple iPhone 15 Pro 256GB', 750000, 900000, 870000, 700, 11, 'ДА'],
+                ['Samsung Galaxy S24 256GB', 680000, 820000, 750000, 700, 11, 'НЕТ'],
+                ['Corsair M65 RGB Elite', 25000, 45000, 40000, 700, 15, 'НЕТ']
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            ws['!cols'] = [{wch: 25}, {wch: 18}, {wch: 15}, {wch: 18}, {wch: 15}, {wch: 15}, {wch: 12}];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Товары');
+            XLSX.writeFile(wb, 'MarketAnalyst_Template.xlsx');
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('uploadArea').classList.add('active');
+        }
+        
+        function handleDragLeave(e) {
+            document.getElementById('uploadArea').classList.remove('active');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('uploadArea').classList.remove('active');
+            if (e.dataTransfer.files.length > 0) processExcel(e.dataTransfer.files[0]);
+        }
+        
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) processExcel(e.target.files[0]);
+        }
+        
+        function processExcel(file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(worksheet);
+                    allProducts = rows;
+                    displayProductsExcel(rows);
+                } catch (err) {
+                    alert('❌ Ошибка: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function displayProductsExcel(products) {
+            let html = '';
+            products.forEach(p => {
+                const cost = parseInt(p['Закупочная цена']) || 0;
+                const price = parseInt(p['ВАША цена']) || 0;
+                const delivery = parseInt(p['Доставка']) || 700;
+                const commission = parseFloat(p['Комиссия %']) || 15;
+                
+                const profit = price - Math.round(price * (commission / 100)) - Math.round(price * 0.03) - delivery - cost;
+                const margin = ((profit / price) * 100).toFixed(1);
+                const status = profit < 0 ? '❌ УБЫТОК' : margin < 15 ? '⚠️ НИЗКО' : '✅ OK';
+                const statusClass = profit < 0 ? 'error' : margin < 15 ? 'low' : 'ok';
+                
+                html += `<div class="item">
+                    <div class="item-left">
+                        <div class="item-name">${p['Название товара']}</div>
+                        <div class="item-details">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div>
+                    </div>
+                    <div class="status ${statusClass}">${status}</div>
+                </div>`;
+            });
+            
+            document.getElementById('itemsList_excel').innerHTML = html;
+            document.getElementById('results_excel').style.display = 'block';
+        }
+        
+        function saveAllProductsExcel() {
+            if (allProducts.length === 0) {
+                alert('Нет товаров');
+                return;
+            }
+            
+            document.getElementById('saveBtn_excel').disabled = true;
+            document.getElementById('saveBtn_excel').textContent = '⏳ Сохранение...';
+            const hour = document.getElementById('notificationHour').value;
+            
+            fetch('https://api.marketanalyst.kz/api/seller/save-products', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({seller_id: currentSellerId, products: allProducts, notification_hour: parseInt(hour)})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`✅ Отлично! Сохранено товаров: ${data.count}`);
+                    document.getElementById('results_excel').style.display = 'none';
+                    allProducts = [];
+                } else {
+                    alert('❌ Ошибка: ' + data.message);
+                }
+            })
+            .catch(err => alert('⚠️ Ошибка: ' + err.message))
+            .finally(() => {
+                document.getElementById('saveBtn_excel').disabled = false;
+                document.getElementById('saveBtn_excel').textContent = '💾 Сохранить товары';
+            });
         }
         
         function saveNotificationTime() {
@@ -205,96 +461,6 @@
                 }
             })
             .catch(err => alert('⚠️ Ошибка: ' + err.message));
-        }
-        
-        function addProduct() {
-            const name = document.getElementById('productSearch').value;
-            const cost = parseInt(document.getElementById('cost_price').value);
-            const price = parseInt(document.getElementById('selling_price').value);
-            const stop = parseInt(document.getElementById('stop_price').value);
-            const delivery = parseInt(document.getElementById('delivery_cost').value) || 700;
-            const commission = parseFloat(document.getElementById('kaspi_commission').value);
-            
-            if (!name || !cost || !price) {
-                alert('Заполните обязательные поля');
-                return;
-            }
-            
-            const profit = price - Math.round(price * (commission / 100)) - Math.round(price * 0.03) - delivery - cost;
-            const margin = ((profit / price) * 100).toFixed(1);
-            
-            allProducts.push({
-                'Название товара': name,
-                'Закупочная цена': cost,
-                'ВАША цена': price,
-                'Минимальная цена': stop || 0,
-                'Доставка': delivery,
-                'Комиссия %': commission,
-                'kaspi_product_id': selectedProductId,
-                'profit': profit,
-                'margin': margin
-            });
-            
-            displayProducts(allProducts);
-            document.getElementById('productSearch').value = '';
-            document.getElementById('cost_price').value = '';
-            document.getElementById('selling_price').value = '';
-            document.getElementById('stop_price').value = '';
-            selectedProductId = null;
-        }
-        
-        function displayProducts(products) {
-            let html = '';
-            products.forEach((p, idx) => {
-                const profit = p.profit || (p['ВАША цена'] - Math.round(p['ВАША цена'] * (p['Комиссия %'] / 100)) - Math.round(p['ВАША цена'] * 0.03) - p['Доставка'] - p['Закупочная цена']);
-                const margin = p.margin || ((profit / p['ВАША цена']) * 100).toFixed(1);
-                const status = profit < 0 ? '❌ УБЫТОК' : margin < 15 ? '⚠️ НИЗКО' : '✅ OK';
-                const statusClass = profit < 0 ? 'error' : margin < 15 ? 'low' : 'ok';
-                
-                html += `<div class="item">
-                    <div>
-                        <div class="item-name">${p['Название товара']}</div>
-                        <div class="item-details">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div>
-                    </div>
-                    <div class="status ${statusClass}">${status}</div>
-                </div>`;
-            });
-            
-            document.getElementById('itemsList').innerHTML = html;
-            document.getElementById('results').style.display = 'block';
-        }
-        
-        function saveAllProducts() {
-            if (allProducts.length === 0) {
-                alert('Нет товаров');
-                return;
-            }
-            
-            document.getElementById('saveBtn').disabled = true;
-            document.getElementById('saveBtn').textContent = '⏳ Сохранение...';
-            const hour = document.getElementById('notificationHour').value;
-            
-            fetch('https://api.marketanalyst.kz/api/seller/save-products', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    seller_id: currentSellerId,
-                    products: allProducts,
-                    notification_hour: parseInt(hour)
-                })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('successMsg').innerHTML = `✅ Сохранено товаров: ${data.count}! Уведомления в ${hour}:00`;
-                    document.getElementById('successMsg').style.display = 'block';
-                }
-            })
-            .catch(err => alert('Ошибка: ' + err.message))
-            .finally(() => {
-                document.getElementById('saveBtn').disabled = false;
-                document.getElementById('saveBtn').textContent = '💾 Сохранить все товары';
-            });
         }
     </script>
 </body>
