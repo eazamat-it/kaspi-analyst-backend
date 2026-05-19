@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarketAnalyst.kz - Анализ ниш Казахстанского рынка</title>
+    <title>MarketAnalyst.kz - Анализ ниш Kазахстансого рынка</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #060b14 0%, #0f1419 100%); color: #e5e7eb; min-height: 100vh; padding: 20px; }
@@ -14,7 +14,6 @@
         .search-box { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
         .search-input { width: 100%; padding: 12px 16px; background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; font-size: 16px; }
         .search-input:focus { outline: none; border-color: #f97316; }
-        .results { margin-top: 20px; }
         .result-card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 30px; margin-bottom: 20px; }
         .verdict { background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 88, 12, 0.05) 100%); border-left: 4px solid #f97316; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .verdict-title { font-size: 20px; font-weight: 700; color: #f97316; margin-bottom: 12px; }
@@ -49,7 +48,7 @@
             <input type="text" class="search-input" id="searchInput" placeholder="Поиск товара на Kaspi: iPhone 15, ноутбук, кондиционер..." onkeypress="if(event.key==='Enter') searchProduct()">
         </div>
         
-        <div class="results" id="results"></div>
+        <div id="results"></div>
     </div>
     
     <script>
@@ -73,7 +72,6 @@
                     document.getElementById('results').innerHTML = `<div class="result-card"><div class="verdict danger"><div class="verdict-title">❌ Товар не найден</div><div class="verdict-text">${data.message}</div></div></div>`;
                     return;
                 }
-                
                 displayResults(data);
             })
             .catch(err => {
@@ -82,186 +80,60 @@
         }
         
         function calculateScores(data) {
-            // Данные
             const reviews = data.reviews || 0;
             const sellers = data.sellers_count || 1;
             const minPrice = data.min_price || 0;
             const maxPrice = data.max_price || minPrice;
-            const commission = data.commission || 15;
             
-            // Спрос (Demand)
-            let demand = 0;
-            if (reviews === 0) {
-                demand = 2; // 0 отзывов = очень низкий спрос
-            } else if (reviews < 10) {
-                demand = 10;
-            } else if (reviews < 50) {
-                demand = 30;
-            } else if (reviews < 100) {
-                demand = 50;
-            } else {
-                demand = Math.min(100, (reviews / 500) * 100);
-            }
+            let demand = reviews === 0 ? 2 : Math.min(100, (reviews / 100) * 100);
+            let competition = sellers <= 5 ? 30 : sellers <= 15 ? 70 : 95;
+            let margin = Math.max(0, Math.min(100, 60 - (competition * 0.3)));
+            let attractiveness = reviews === 0 && sellers > 15 ? 10 : Math.round((demand + (100 - competition) + margin) / 3);
             
-            // Конкуренция (Competition)
-            let competition = 0;
-            if (sellers <= 3) {
-                competition = 15;
-            } else if (sellers <= 5) {
-                competition = 30;
-            } else if (sellers <= 10) {
-                competition = 50;
-            } else if (sellers <= 15) {
-                competition = 70;
-            } else if (sellers <= 20) {
-                competition = 85;
-            } else {
-                competition = 95;
-            }
-            
-            // Маржинальность (Margin)
-            // Примерная расчёт: средняя цена минус комиссия и налог
-            const avgPrice = (minPrice + maxPrice) / 2;
-            const commissionAmount = avgPrice * (commission / 100);
-            const taxAmount = avgPrice * 0.03;
-            const estimatedCost = avgPrice * 0.4; // Примерно 40% от цены - закупка
-            
-            let margin = ((avgPrice - commissionAmount - taxAmount - estimatedCost) / avgPrice * 100);
-            margin = Math.max(0, Math.min(100, margin));
-            
-            // Привлекательность ниши (Attractiveness)
-            let attractiveness = (demand + (100 - competition) + margin) / 3;
-            
-            // Жёсткое правило: если спрос низкий И конкуренция критическая
-            if (demand <= 5 && competition >= 90) {
-                attractiveness = Math.min(10, attractiveness);
-            }
-            
-            return {
-                demand: Math.round(demand),
-                margin: Math.round(margin),
-                competition: Math.round(competition),
-                attractiveness: Math.round(attractiveness)
-            };
-        }
-        
-        function getVerdictTitle(scores) {
-            if (scores.attractiveness >= 70) return "✅ ОТЛИЧНАЯ НИША";
-            if (scores.attractiveness >= 50) return "✅ ХОРОШАЯ НИША";
-            if (scores.attractiveness >= 30) return "⚠️ РИСКОВАННАЯ НИША";
-            return "🚫 КРИТИЧЕСКИЙ РИСК";
+            return { demand: Math.round(demand), margin: Math.round(margin), competition: Math.round(competition), attractiveness: Math.round(attractiveness) };
         }
         
         function displayResults(data) {
             const scores = calculateScores(data);
-            const verdict = getVerdictTitle(scores);
+            const avgPrice = Math.round((data.min_price + data.max_price) / 2);
             
             let html = `<div class="result-card">
-                <div class="verdict ${scores.attractiveness < 30 ? 'danger' : scores.attractiveness < 50 ? 'warning' : ''}">
-                    <div class="verdict-title">${verdict}</div>
-                    <div class="verdict-text">
-                        На карточке <strong>${data.product_name}</strong> зафиксировано <strong>${data.sellers_count} продавцов</strong>.
-                        ${data.reviews === 0 ? 
-                            'Отзывов еще нет - реальный спрос не подтвержден.' : 
-                            `Товар имеет ${data.reviews} отзывов, что указывает на текущий спрос.`}
-                        Средняя цена: <strong>${Math.round((data.min_price + data.max_price) / 2).toLocaleString()}₸</strong>.
-                        ${scores.competition >= 80 ? 
-                            'Конкуренция критическая - начнется ценовая война.' : 
-                            'Конкуренция на приемлемом уровне.'}
-                    </div>
+                <div class="verdict">
+                    <div class="verdict-title">${scores.attractiveness >= 70 ? '✅ ОТЛИЧНАЯ' : scores.attractiveness >= 50 ? '✅ ХОРОШАЯ' : scores.attractiveness >= 30 ? '⚠️ РИСКОВАННАЯ' : '🚫 КРИТИЧЕСКИЙ РИСК'}</div>
+                    <div class="verdict-text">Товар: <strong>${data.product_name}</strong> | Продавцов: <strong>${data.sellers_count}</strong> | Отзывов: <strong>${data.reviews}</strong> | Средняя цена: <strong>${avgPrice.toLocaleString()}₸</strong></div>
                 </div>
                 
                 <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-label">ТОВАРОВ В НИШЕ</div>
-                        <div class="stat-value">1</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">СРЕДНЯЯ ЦЕНА</div>
-                        <div class="stat-value">${Math.round((data.min_price + data.max_price) / 2).toLocaleString()}₸</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">КОНКУРЕНЦИЯ</div>
-                        <div class="stat-value">${data.sellers_count}</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">ОППТИМ. ЦЕНА</div>
-                        <div class="stat-value">${(data.min_price - 1).toLocaleString()}₸</div>
-                    </div>
+                    <div class="stat-box"><div class="stat-label">ТОВАРОВ</div><div class="stat-value">1</div></div>
+                    <div class="stat-box"><div class="stat-label">СРЕДНЯЯ ЦЕНА</div><div class="stat-value">${avgPrice.toLocaleString()}₸</div></div>
+                    <div class="stat-box"><div class="stat-label">КОНКУРЕНЦИЯ</div><div class="stat-value">${data.sellers_count}</div></div>
+                    <div class="stat-box"><div class="stat-label">ОПТИМ. ЦЕНА</div><div class="stat-value">${(data.min_price - 1).toLocaleString()}₸</div></div>
                 </div>
                 
                 <div class="scores">
                     <div class="score-item">
-                        <div class="score-label">
-                            <span class="score-name">Привлекательность ниши</span>
-                            <span class="score-value">${scores.attractiveness}/100</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${scores.attractiveness}%"></div>
-                        </div>
+                        <div class="score-label"><span>Привлекательность</span><span class="score-value">${scores.attractiveness}/100</span></div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${scores.attractiveness}%"></div></div>
                     </div>
-                    
                     <div class="score-item">
-                        <div class="score-label">
-                            <span class="score-name">Спрос</span>
-                            <span class="score-value">${scores.demand}/100</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${scores.demand}%"></div>
-                        </div>
+                        <div class="score-label"><span>Спрос</span><span class="score-value">${scores.demand}/100</span></div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${scores.demand}%"></div></div>
                     </div>
-                    
                     <div class="score-item">
-                        <div class="score-label">
-                            <span class="score-name">Маржинальность</span>
-                            <span class="score-value">${scores.margin}/100</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${scores.margin}%"></div>
-                        </div>
+                        <div class="score-label"><span>Маржинальность</span><span class="score-value">${scores.margin}/100</span></div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${scores.margin}%"></div></div>
                     </div>
-                    
                     <div class="score-item">
-                        <div class="score-label">
-                            <span class="score-name">Конкуренция (выше = хуже)</span>
-                            <span class="score-value">${scores.competition}/100</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${scores.competition}%"></div>
-                        </div>
+                        <div class="score-label"><span>Конкуренция</span><span class="score-value">${scores.competition}/100</span></div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${scores.competition}%"></div></div>
                     </div>
                 </div>
                 
-                ${scores.attractiveness < 30 ? 
-                    `<div class="advice danger">
-                        <strong>⛔️ РЕКОМЕНДАЦИЯ:</strong> Вход на эту карточку категорически запрещен! 
-                        На товар без отзывов уже навалилось ${data.sellers_count} конкурентов. 
-                        Это классический "хайповый закуп" из обучающих курсов. 
-                        Реального спроса нет, а ценовая война уничтожит маржу. 
-                        <br><br>
-                        <strong>Выход:</strong> Создай собственную карточку с уникальным контентом, 
-                        добавь подарок в комплект и продвигай через Kaspi Marketing.
-                    </div>` : 
-                    scores.competition >= 50 ? 
-                    `<div class="advice warning">
-                        <strong>⚠️ ВНИМАНИЕ:</strong> Конкуренция высокая. 
-                        Для входа потребуется агрессивная ценовая стратегия и уникальное позиционирование.
-                    </div>` : 
-                    `<div class="advice">
-                        <strong>✅ СОВЕТ:</strong> Ниша привлекательна. 
-                        Вы можете войти на эту карточку по цене ${(data.min_price - 1).toLocaleString()}₸ 
-                        и постепенно набирать отзывы и рейтинг.
-                    </div>`
-                }
+                ${scores.attractiveness < 30 ? `<div class="advice danger"><strong>⛔️ РЕКОМЕНДАЦИЯ:</strong> Входить опасно! На перегретую карточку навалилось много конкурентов. Создай собственную карточку с уникальным контентом.</div>` : scores.competition >= 50 ? `<div class="advice warning"><strong>⚠️ ВНИМАНИЕ:</strong> Высокая конкуренция. Потребуется агрессивная ценовая стратегия и уникальное позиционирование.</div>` : `<div class="advice"><strong>✅ СОВЕТ:</strong> Хорошая ниша для входа. Вы можете начать продажи по оптимальной цене.</div>`}
             </div>`;
             
             document.getElementById('results').innerHTML = html;
         }
-        
-        // Enter для поиска
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') searchProduct();
-        });
     </script>
 </body>
 </html>
