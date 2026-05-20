@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный кабинет - MarketAnalyst.kz</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -54,7 +55,11 @@
     <div class="container">
         <div class="header">
             <h1>📊 MarketAnalyst.kz</h1>
-            <a href="app.html">← На главную</a>
+            <div style="display:flex;align-items:center;gap:12px">
+                <span id="userEmail" style="font-size:13px;color:#9ca3af"></span>
+                <button onclick="doLogout()" style="background:transparent;border:1px solid #1e2a3a;color:#6b7280;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer">Выйти</button>
+                <a href="app.html">← На главную</a>
+            </div>
         </div>
         
         <div class="tabs">
@@ -202,16 +207,28 @@
     </div>
     
     <script>
+        const SUPABASE_URL = 'https://kbdrjwvbkdbhjokyqlzy.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZHJqd3Zia2RiaGpva3lxbHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5OTI0NjQsImV4cCI6MjA2MzU2ODQ2NH0.rIuEMoMmtAiCczM7JJfwDv36WUYWZ0HS1DwYUkVAfFQ';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let allProducts = [];
         let tempProducts = [];
         let selectedProductId = null;
-        let currentSellerId = localStorage.getItem('seller_id');
-        if (!currentSellerId) {
-            currentSellerId = 'user_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('seller_id', currentSellerId);
-        }
-        
-        window.addEventListener('load', () => {
+        let currentSellerId = null;
+
+        window.addEventListener('load', async () => {
+            // Проверяем сессию Supabase
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                // Вошёл через app.html — берём ID из сессии
+                currentSellerId = session.user.id;
+                document.getElementById('userEmail').textContent = session.user.email;
+            } else {
+                // Не вошёл — редирект на app.html
+                window.location.href = 'app.html';
+                return;
+            }
+
             fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`)
                 .then(r => r.json())
                 .then(data => {
@@ -220,7 +237,13 @@
                 .catch(err => console.log('Settings not found'));
             
             loadSavedProducts();
+            setTimeout(checkTelegramStatus, 500);
         });
+
+        async function doLogout() {
+            await sb.auth.signOut();
+            window.location.href = 'app.html';
+        }
         
         function loadSavedProducts() {
             fetch(`https://api.marketanalyst.kz/api/seller/get-products?seller_id=${currentSellerId}`)
@@ -523,26 +546,7 @@
             })
             .catch(err => alert('⚠️ Ошибка: ' + err.message));
         }
-        async function connectTelegram() {
-    const session = (await sb.auth.getSession()).data.session;
-    if (!session) { alert('Войдите в аккаунт'); return; }
-    
-    // Получаем seller_id
-    const r = await fetch(`${API}/api/seller/get-settings`, {
-        headers: {'Authorization': `Bearer ${session.access_token}`}
-    });
-    const data = await r.json();
-    const sellerId = data.seller_id;
-    
-    if (!sellerId) { alert('Ошибка получения ID'); return; }
-    
-    // Открываем бота с deep link
-    const botUrl = `https://t.me/marketanalyst_kz_bot?start=${sellerId}`;
-    window.open(botUrl, '_blank');
-    
-    document.getElementById('tgStatus').innerHTML = 
-        '<div style="color:#10b981">✅ Откройте бота и нажмите Start — уведомления будут подключены!</div>';
-}
+
         async function connectTelegram() {
     if (!currentSellerId) {
         alert('Ошибка: не найден ID пользователя');
@@ -567,19 +571,19 @@
         '<div style="color:#f97316;font-size:12px">⏳ Откройте бота и нажмите Start — уведомления будут подключены!</div>';
 }
 
-// Проверяем статус при загрузке
-window.addEventListener('load', () => {
-    setTimeout(async () => {
+// Проверяем статус Telegram
+async function checkTelegramStatus() {
+    try {
         const r = await fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`);
         const data = await r.json();
         const el = document.getElementById('tgStatus');
         if (el) {
-            el.innerHTML = data.telegram_chat_id 
+            el.innerHTML = data.telegram_chat_id
                 ? '<div style="color:#10b981;font-size:12px">✅ Telegram подключён</div>'
                 : '<div style="color:#6b7280;font-size:12px">❌ Telegram не подключён</div>';
         }
-    }, 1000);
-});
+    } catch(e) {}
+}
     </script>
 </body>
 </html>
