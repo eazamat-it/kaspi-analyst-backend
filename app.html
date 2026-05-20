@@ -142,7 +142,7 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
   <div id="analyzeSection">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1 style="font-weight:900;font-size:22px;margin-bottom:6px">Анализ ниш <span style="color:#f97316">казахстанского рынка</span></h1>
-        <a href="seller.html" style="color: #9ca3af; font-size: 13px; font-weight: 700; text-decoration: none; padding: 8px 14px; border: 1px solid #1e2a3a; border-radius: 8px;" onmouseover="this.style.borderColor='#f97316'; this.style.color='#f97316'" onmouseout="this.style.borderColor='#1e2a3a'; this.style.color='#9ca3af'">🏪 Мои товары →</a>
+       <a href="#" onclick="goToSeller()" style="color: #9ca3af; font-size: 13px; font-weight: 700; text-decoration: none; padding: 8px 14px; border: 1px solid #1e2a3a; border-radius: 8px;" onmouseover="this.style.borderColor='#f97316'; this.style.color='#f97316'" onmouseout="this.style.borderColor='#1e2a3a'; this.style.color='#9ca3af'">🏪 Мои товары →</a>
     </div>
     <p style="color:#4b5563;margin-bottom:4px;font-size:13px">Введите товар → AI анализирует нишу, цены, маржу и конкурентов</p>
     <p style="color:#374151;margin-bottom:16px;font-size:11px">* Данные генерируются AI на основе анализа рынка Казахстана</p>
@@ -1214,6 +1214,12 @@ function downloadResults() {
     // Цвет вердикта
     XLSX.utils.book_append_sheet(wb, ws, 'Анализ');
     XLSX.writeFile(wb, `marketanalyst_results_${new Date().toLocaleDateString('ru')}.xlsx`);
+}
+
+    async function goToSeller() {
+    const { data: { session } } = await sb.auth.getSession();
+    const uid = session?.user?.id || localStorage.getItem('seller_id') || '';
+    window.location.href = `seller.html?uid=${uid}`;
 }
 
 init();
