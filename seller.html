@@ -4,582 +4,215 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный кабинет - MarketAnalyst.kz</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #060b14 0%, #0f1419 100%); color: #e5e7eb; min-height: 100vh; padding: 20px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #060b14 0%, #0f1419 100%);
+            color: #e5e7eb;
+            min-height: 100vh;
+            padding: 20px;
+        }
         .container { max-width: 1200px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 20px 0; border-bottom: 1px solid #1e2a3a; }
         .header h1 { font-size: 28px; color: #f97316; }
-        .header a { background: #f97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #1e2a3a; overflow-x: auto; }
-        .tab-btn { padding: 12px 20px; background: none; border: none; color: #9ca3af; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; white-space: nowrap; }
-        .tab-btn.active { color: #f97316; border-bottom-color: #f97316; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 30px; }
-        .card h2 { color: #f97316; margin-bottom: 24px; font-size: 22px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 8px; font-weight: 600; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; font-size: 14px; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
-        .btn { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 24px; }
+        .card h2 { font-size: 18px; margin-bottom: 20px; color: #f97316; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; }
+        .form-group input { width: 100%; padding: 10px 12px; background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; color: #e5e7eb; }
+        .form-group input:focus { outline: none; border-color: #f97316; }
+        .btn { width: 100%; padding: 12px 16px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
-        .btn-full { width: 100%; padding: 14px; margin-top: 20px; }
-        .btn-small { padding: 6px 12px; font-size: 12px; }
-        .upload-area { border: 2px dashed #f97316; border-radius: 12px; padding: 60px 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
-        .upload-area:hover { background: rgba(249, 115, 22, 0.05); }
-        .upload-area.active { background: rgba(249, 115, 22, 0.1); }
-        .file-input { display: none; }
-        .item { background: #1e2a3a; padding: 16px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .item-left { flex: 1; }
-        .item-name { font-weight: 600; color: #f3f4f6; margin-bottom: 4px; }
-        .item-details { font-size: 12px; color: #9ca3af; }
-        .item-actions { display: flex; gap: 8px; }
-        .status { font-weight: 700; }
-        .ok { color: #10b981; }
-        .low { color: #f59e0b; }
-        .error { color: #ef4444; }
-        .success-msg { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #a7f3d0; padding: 14px; border-radius: 6px; margin-bottom: 20px; }
-        .search-results { background: #1e2a3a; border: 1px solid #2d3e4f; border-radius: 6px; padding: 12px; margin-top: 8px; max-height: 200px; overflow-y: auto; display: none; }
-        .search-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #2d3e4f; }
-        .search-item:hover { background: #0f1419; }
-        .search-item-title { font-weight: 600; color: #f3f4f6; }
-        .search-item-price { font-size: 12px; color: #9ca3af; margin-top: 4px; }
-        .empty-state { text-align: center; padding: 40px 20px; color: #9ca3af; }
-        .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+        .results { grid-column: 1 / -1; display: none; }
+        .result-card { background: #0f1419; border: 1px solid #1e2a3a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #f97316; }
+        .product-name { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #f3f4f6; }
+        .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 12px; margin-bottom: 16px; color: #fca5a5; font-size: 13px; }
+        .success-box { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 6px; padding: 12px; margin-bottom: 16px; color: #a7f3d0; font-size: 13px; }
+        .profit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .profit-item { background: #1e2a3a; padding: 12px; border-radius: 6px; }
+        .profit-label { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
+        .profit-value { font-size: 16px; font-weight: 700; color: #f97316; }
+        .profit-value.positive { color: #10b981; }
+        .profit-value.negative { color: #ef4444; }
+        .market-data { background: #1e2a3a; padding: 16px; border-radius: 6px; margin-top: 16px; }
+        .market-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #0f1419; font-size: 13px; }
+        .loader { display: none; text-align: center; padding: 20px; }
+        .spinner { border: 3px solid #1e2a3a; border-top: 3px solid #f97316; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .alt-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e2a3a; font-size: 13px; }
+        .alt-price { color: #f97316; font-weight: 600; }
+        .similarity-badge { display: inline-block; background: #1e2a3a; color: #9ca3af; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📊 MarketAnalyst.kz</h1>
-            <a href="app.html">← На главную</a>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('manual')">📝 Добавить вручную</button>
-            <button class="tab-btn" onclick="switchTab('excel')">📊 Загрузить Excel</button>
-            <button class="tab-btn" onclick="switchTab('myproducts')">📦 Мои товары</button>
-            <button class="tab-btn" onclick="switchTab('settings')">⚙️ Настройки</button>
-        </div>
-        
-        <!-- ВКЛАДКА 1: ДОБАВИТЬ ВРУЧНУЮ -->
-        <div id="manual" class="tab-content active">
-            <div class="card">
-                <h2>📝 Добавить товар вручную</h2>
-                
-                <div class="form-group">
-                    <label>🔍 Найти товар на Kaspi</label>
-                    <input type="text" id="productSearch" placeholder="Например: iPhone 15 Pro 256GB" oninput="searchKaspiProduct()">
-                    <div class="search-results" id="searchResults"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label>💰 Закупочная цена (₸)</label>
-                    <input type="number" id="cost_price" placeholder="750000">
-                </div>
-                
-                <div class="form-group">
-                    <label>🏷️ ВАША цена (₸)</label>
-                    <input type="number" id="selling_price" placeholder="900000">
-                </div>
-                
-                <div class="form-group">
-                    <label>📉 Минимальная цена (₸)</label>
-                    <input type="number" id="stop_price" placeholder="870000">
-                </div>
-                
-                <div class="form-group">
-                    <label>🚚 Доставка (₸)</label>
-                    <input type="number" id="delivery_cost" value="700">
-                </div>
-                
-                <div class="form-group">
-                    <label>📊 Комиссия Kaspi (%)</label>
-                    <select id="kaspi_commission">
-                        <option value="5">5% (Книги, неэлектроника)</option>
-                        <option value="10">10% (Электроника)</option>
-                        <option value="11">11% (Мобильные телефоны)</option>
-                        <option value="15" selected>15% (Аксессуары, стандарт)</option>
-                        <option value="18">18% (Автотовары)</option>
-                        <option value="22">22% (Другие категории)</option>
-                    </select>
-                </div>
-                
-                <button class="btn btn-full" onclick="addProduct()">➕ Добавить товар</button>
-                
-                <div class="success-msg" id="successMsg_manual" style="display:none; margin-top: 20px;"></div>
-                
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #1e2a3a;">
-                    <h3 style="color: #f97316; margin-bottom: 12px;">💡 Совет:</h3>
-                    <p style="font-size: 13px; color: #d1d5db; line-height: 1.6;">Введите название товара,Затем вы получите рекомендацию по цене в Telegram.</p>
-                </div>
+            <div style="text-align: right; font-size: 14px; color: #9ca3af;">
+                <div>Личный кабинет продавца</div>
+                <div style="font-size: 12px; margin-top: 4px;">Анализ товаров и конкурентов</div>
             </div>
         </div>
         
-        <!-- ВКЛАДКА 2: ЗАГРУЗИТЬ EXCEL -->
-        <div id="excel" class="tab-content">
+        <div class="main-content">
             <div class="card">
-                <h2>📊 Загрузить товары из Excel</h2>
-                
-                <button class="btn" onclick="downloadTemplate()" style="margin-bottom: 20px;">📥 Скачать шаблон Excel</button>
-                
-                <div class="upload-area" id="uploadArea" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('excelFile').click()">
-                    <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
-                    <div style="font-size: 18px; font-weight: 600; color: #f97316; margin-bottom: 4px;">Перетащите Excel сюда</div>
-                    <div style="font-size: 13px; color: #9ca3af;">или нажмите чтобы выбрать файл</div>
-                    <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
-                </div>
-                
-                <div class="success-msg" id="successMsg_excel" style="display:none; margin-top: 20px;"></div>
-            </div>
-        </div>
-        
-        <!-- ВКЛАДКА 3: МОИ ТОВАРЫ -->
-        <div id="myproducts" class="tab-content">
-            <div class="card">
-                <h2>📦 Мои товары</h2>
-                
-                <div id="productsContainer">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📦</div>
-                        <div>Товаров не найдено</div>
-                        <div style="font-size: 12px; margin-top: 8px;">Добавьте товары вручную или загрузите Excel</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- ВКЛАДКА 4: НАСТРОЙКИ -->
-        <div id="settings" class="tab-content">
-            <div class="card">
-                <h2>⚙️ Настройки уведомлений</h2>
-                
+                <h2>🔍 Поиск товара</h2>
                 <div class="form-group">
-                    <label>🔔 Во сколько приходят уведомления в Telegram?</label>
-                    <select id="notificationHour">
-                        <option value="0">00:00 (полночь)</option>
-                        <option value="2" selected>02:00 (2 ночи)</option>
-                        <option value="4">04:00 (4 ночи)</option>
-                        <option value="6">06:00 (6 утра)</option>
-                        <option value="8">08:00 (8 утра)</option>
-                        <option value="10">10:00 (10 утра)</option>
-                        <option value="12">12:00 (полдень)</option>
-                        <option value="14">14:00 (2 дня)</option>
-                        <option value="16">16:00 (4 дня)</option>
-                        <option value="18">18:00 (6 вечера)</option>
-                        <option value="20">20:00 (8 вечера)</option>
-                        <option value="22">22:00 (10 вечера)</option>
-                    </select>
+                    <label>Название товара (точное)</label>
+                    <input type="text" id="product_name" placeholder="Corsair M55 RGB">
                 </div>
-                
-                <button class="btn btn-full" onclick="saveNotificationTime()">✅ Сохранить время</button>
-
-                <!-- Подключить Telegram -->
-<div style="margin-top:24px;padding:20px;background:#060b14;border:1px solid #1e2a3a;border-radius:12px">
-    <div style="font-size:13px;font-weight:700;color:#6b7280;margin-bottom:12px">📱 TELEGRAM УВЕДОМЛЕНИЯ</div>
-    <p style="font-size:12px;color:#6b7280;margin-bottom:16px">Получайте ежедневные рекомендации по ценам прямо в Telegram</p>
-    <div id="tgStatus" style="margin-bottom:12px;font-size:12px"></div>
-    <button onclick="connectTelegram()" style="width:100%;padding:12px;background:linear-gradient(135deg,#229ED9,#1a85b8);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">
-        📱 Подключить Telegram
-    </button>
-</div>
-                
-                <div class="success-msg" id="successMsg_settings" style="display:none; margin-top: 20px;"></div>
-                
-                <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #1e2a3a;">
-                    <h3 style="color: #f97316; margin-bottom: 16px;">📈 Как это работает?</h3>
-                    <div style="font-size: 13px; color: #d1d5db; line-height: 1.8;">
-                        <p style="margin-bottom: 12px;">✅ <strong>Добавляй товары</strong> - вручную или через Excel</p>
-                        <p style="margin-bottom: 12px;">✅ <strong>Выбери время</strong> - когда получать уведомления</p>
-                        <p style="margin-bottom: 12px;">✅ <strong>Система анализирует</strong> - каждый день в выбранное время</p>
-                        <p>✅ <strong>Получай рекомендации</strong> - в Telegram как менять цены для максимальной прибыли</p>
-                    </div>
+                <div class="form-group">
+                    <label>Закупочная цена (₸)</label>
+                    <input type="number" id="cost_price" placeholder="10000">
+                </div>
+                <div class="form-group">
+                    <label>Ваша цена продажи (₸)</label>
+                    <input type="number" id="selling_price" placeholder="33000">
+                </div>
+                <button class="btn" onclick="searchProduct()">Анализировать</button>
+                <div class="loader" id="loader">
+                    <div class="spinner"></div>
+                    <div style="margin-top: 12px; font-size: 13px; color: #9ca3af;">Поиск товара...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>💡 Как это работает</h2>
+                <div style="font-size: 13px; color: #d1d5db; line-height: 1.8;">
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">1. Введите точное название товара</strong><br>Как оно называется на Kaspi</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">2. Укажите закупочную цену</strong><br>Сколько вы платите поставщику</p>
+                    <p style="margin-bottom: 12px;"><strong style="color: #f97316;">3. Укажите цену продажи</strong><br>За сколько хотите продавать на Kaspi</p>
+                    <p><strong style="color: #f97316;">4. Система рассчитает прибыль</strong><br>С учётом комиссии Kaspi (15%)</p>
+                </div>
+            </div>
+            
+            <div class="card results" id="results">
+                <h2>📈 Результаты анализа</h2>
+                <div class="result-card" id="primary_result"></div>
+                <div id="alternatives_section" style="display: none;">
+                    <h3 style="font-size: 14px; color: #9ca3af; margin-top: 24px; margin-bottom: 12px;">📋 Похожие товары на Kaspi</h3>
+                    <div id="alternatives_list"></div>
                 </div>
             </div>
         </div>
     </div>
     
     <script>
-        let allProducts = [];
-        let tempProducts = [];
-        let selectedProductId = null;
-        let currentSellerId = localStorage.getItem('seller_id');
-        if (!currentSellerId) {
-            currentSellerId = 'user_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('seller_id', currentSellerId);
-        }
-        
-        window.addEventListener('load', () => {
-            fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.notification_hour) document.getElementById('notificationHour').value = data.notification_hour;
-                })
-                .catch(err => console.log('Settings not found'));
+        async function searchProduct() {
+            const product_name = document.getElementById('product_name').value.trim();
+            const cost_price = document.getElementById('cost_price').value.trim();
+            const selling_price = document.getElementById('selling_price').value.trim();
             
-            loadSavedProducts();
-        });
-        
-        function loadSavedProducts() {
-            fetch(`https://api.marketanalyst.kz/api/seller/get-products?seller_id=${currentSellerId}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.status === 'success' && data.products.length > 0) {
-                        allProducts = data.products;
-                        displaySavedProducts();
-                    }
-                })
-                .catch(err => console.log('Products not found'));
-        }
-        
-        function displaySavedProducts() {
-            let html = '';
-            allProducts.forEach((p, idx) => {
-                const cost = p['Закупочная цена'];
-                const price = p['ВАША цена'];
-                const delivery = p['Доставка'] || 700;
-                const commission = p['Комиссия %'];
-                const profit = price - Math.round(price * (commission / 100)) - Math.round(price * 0.03) - delivery - cost;
-                const margin = ((profit / price) * 100).toFixed(1);
-                const status = profit < 0 ? '❌ УБЫТОК' : margin < 15 ? '⚠️ НИЗКО' : '✅ OK';
-                const statusClass = profit < 0 ? 'error' : margin < 15 ? 'low' : 'ok';
-                
-                html += `<div class="item">
-                    <div class="item-left">
-                        <div class="item-name">${p['Название товара']}</div>
-                        <div class="item-details">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}% | Ваша цена: ${price.toLocaleString()}₸</div>
-                    </div>
-                    <div style="display: flex; gap: 12px; align-items: center;">
-                        <div class="status ${statusClass}">${status}</div>
-                        <button class="btn btn-small" onclick="deleteProduct(${idx})">🗑️ Удалить</button>
-                    </div>
-                </div>`;
-            });
-            
-            if (html === '') {
-                html = `<div class="empty-state">
-                    <div class="empty-state-icon">📦</div>
-                    <div>Товаров не найдено</div>
-                    <div style="font-size: 12px; margin-top: 8px;">Добавьте товары во вкладке "Добавить вручную" или "Загрузить Excel"</div>
-                </div>`;
-            }
-            
-            document.getElementById('productsContainer').innerHTML = html;
-        }
-        
-        function deleteProduct(idx) {
-            if (confirm('Удалить товар?')) {
-                allProducts.splice(idx, 1);
-                displaySavedProducts();
-            }
-        }
-        
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(tab).classList.add('active');
-            event.target.classList.add('active');
-            
-            if (tab === 'myproducts') {
-                loadSavedProducts();
-            }
-        }
-        
-        function searchKaspiProduct() {
-            const query = document.getElementById('productSearch').value;
-            if (!query || query.length < 3) {
-                document.getElementById('searchResults').style.display = 'none';
+            if (!product_name) {
+                alert('⚠️ Введите название товара');
                 return;
             }
             
-            fetch('https://api.marketanalyst.kz/api/analyze', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({query: query, limit: 5})
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.products && data.products.length > 0) {
-                    let html = '';
-                    data.products.forEach(p => {
-                        html += `<div class="search-item" onclick="selectProduct('${p.name}', '${p.id}')">
-                            <div class="search-item-title">${p.name}</div>
-                            <div class="search-item-price">${p.min_price.toLocaleString()}₸ - ${p.max_price.toLocaleString()}₸ | ${p.sellers_count} продавцов</div>
-                        </div>`;
-                    });
-                    document.getElementById('searchResults').innerHTML = html;
-                    document.getElementById('searchResults').style.display = 'block';
+            if (!selling_price) {
+                alert('⚠️ Введите цену продажи');
+                return;
+            }
+            
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            try {
+                const response = await fetch('https://api.marketanalyst.kz/api/seller/search-product', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        product_name: product_name,
+                        cost_price: cost_price ? parseInt(cost_price) : null,
+                        selling_price: selling_price ? parseInt(selling_price) : null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'found') {
+                    displayResults(data);
+                } else {
+                    alert('❌ Товар не найден на Kaspi. Проверьте точное название.');
                 }
-            })
-            .catch(err => console.error('Search error:', err));
-        }
-        
-        function selectProduct(name, id) {
-            document.getElementById('productSearch').value = name;
-            selectedProductId = id;
-            document.getElementById('searchResults').style.display = 'none';
-        }
-        
-        function addProduct() {
-            const name = document.getElementById('productSearch').value;
-            const cost = parseInt(document.getElementById('cost_price').value);
-            const price = parseInt(document.getElementById('selling_price').value);
-            const stop = parseInt(document.getElementById('stop_price').value) || 0;
-            const delivery = parseInt(document.getElementById('delivery_cost').value) || 700;
-            const commission = parseFloat(document.getElementById('kaspi_commission').value);
-            
-            if (!name || !cost || !price) {
-                alert('Заполните обязательные поля: название, закупка, цена');
-                return;
+            } catch (error) {
+                alert('❌ Ошибка: ' + error.message);
+            } finally {
+                document.getElementById('loader').style.display = 'none';
             }
-            
-            tempProducts.push({
-                'Название товара': name,
-                'Закупочная цена': cost,
-                'ВАША цена': price,
-                'Минимальная цена': stop,
-                'Доставка': delivery,
-                'Комиссия %': commission
-            });
-            
-            displayTempProducts();
-            document.getElementById('productSearch').value = '';
-            document.getElementById('cost_price').value = '';
-            document.getElementById('selling_price').value = '';
-            document.getElementById('stop_price').value = '';
-            selectedProductId = null;
         }
         
-        function displayTempProducts() {
-            let html = '';
-            tempProducts.forEach((p, idx) => {
-                const cost = p['Закупочная цена'];
-                const price = p['ВАША цена'];
-                const delivery = p['Доставка'] || 700;
-                const commission = p['Комиссия %'];
-                const profit = price - Math.round(price * (commission / 100)) - Math.round(price * 0.03) - delivery - cost;
-                const margin = ((profit / price) * 100).toFixed(1);
-                const status = profit < 0 ? '❌ УБЫТОК' : margin < 15 ? '⚠️ НИЗКО' : '✅ OK';
-                const statusClass = profit < 0 ? 'error' : margin < 15 ? 'low' : 'ok';
-                
-                html += `<div class="item">
-                    <div class="item-left">
-                        <div class="item-name">${p['Название товара']}</div>
-                        <div class="item-details">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div>
-                    </div>
-                    <div class="status ${statusClass}">${status}</div>
-                </div>`;
-            });
+        function displayResults(data) {
+            const primary = data.primary;
+            const profit = data.profit_analysis;
+            const market = data.market_data;
+            const alternatives = data.alternatives || [];
             
-            let container = document.getElementById('manual');
-            let productsHtml = container.querySelector('[id*="productsHtml"]');
-            if (!productsHtml) {
-                productsHtml = document.createElement('div');
-                productsHtml.id = 'productsHtml';
-                productsHtml.className = 'card';
-                productsHtml.style.marginTop = '20px';
-                container.appendChild(productsHtml);
-            }
-            
-            productsHtml.innerHTML = `
-                <h3 style="color: #f97316; margin-bottom: 16px;">📝 Товары для добавления (${tempProducts.length}):</h3>
-                ${html}
-                <button class="btn btn-full" onclick="saveAllProducts()">💾 Сохранить все товары</button>
+            let html = `
+                <div class="product-name">
+                    ${primary.name}
+                    <span class="similarity-badge">${primary.similarity.toFixed(0)}% совпадение</span>
+                </div>
+                <div style="font-size: 13px; color: #9ca3af; padding: 12px; background: #1e2a3a; border-radius: 6px; margin-bottom: 12px;">
+                    👤 Продавец: <strong>${primary.seller}</strong>
+                </div>
             `;
-        }
-        
-        function saveAllProducts() {
-            const products = tempProducts.length > 0 ? tempProducts : allProducts;
-            if (products.length === 0) {
-                alert('Нет товаров для сохранения');
-                return;
+            
+            if (profit) {
+                const isProfitable = profit.profitable;
+                html += isProfitable 
+                    ? `<div class="success-box">✅ ПРИБЫЛЬ: <strong>${profit.profit.toLocaleString()}₸</strong> | Маржа: <strong>${profit.margin}%</strong></div>`
+                    : `<div class="warning-box">⚠️ ${profit.warning}</div>`;
+                
+                html += `
+                    <div class="profit-grid">
+                        <div class="profit-item">
+                            <div class="profit-label">Закупка</div>
+                            <div class="profit-value">${profit.cost_price.toLocaleString()}₸</div>
+                        </div>
+                        <div class="profit-item">
+                            <div class="profit-label">Ваша цена</div>
+                            <div class="profit-value" style="color: #10b981;">${profit.selling_price.toLocaleString()}₸</div>
+                        </div>
+                        <div class="profit-item">
+                            <div class="profit-label">Комиссия Kaspi</div>
+                            <div class="profit-value" style="color: #ef4444;">-${profit.commission.toLocaleString()}₸</div>
+                        </div>
+                        <div class="profit-item">
+                            <div class="profit-label">ЧИСТАЯ ПРИБЫЛЬ</div>
+                            <div class="profit-value ${isProfitable ? 'positive' : 'negative'}">
+                                ${isProfitable ? '+' : ''}${profit.profit.toLocaleString()}₸
+                            </div>
+                        </div>
+                    </div>
+                    <div class="market-data">
+                        <h4 style="font-size: 13px; color: #9ca3af; margin-bottom: 12px;">📊 Конкуренты на Kaspi</h4>
+                        <div class="market-row"><span>Минимальная цена</span><span style="color: #f97316; font-weight: 600;">${market.min_price.toLocaleString()}₸</span></div>
+                        <div class="market-row"><span>Средняя цена</span><span style="color: #f97316; font-weight: 600;">${market.avg_price.toLocaleString()}₸</span></div>
+                        <div class="market-row"><span>Рекомендуемая цена</span><span style="color: #10b981; font-weight: 600;">${market.recommended_price.toLocaleString()}₸</span></div>
+                        <div class="market-row"><span>Конкурентов</span><span>${market.competitors_count}</span></div>
+                    </div>
+                `;
             }
             
-            const hour = document.getElementById('notificationHour').value;
+            document.getElementById('primary_result').innerHTML = html;
             
-            fetch('https://api.marketanalyst.kz/api/seller/save-products', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({seller_id: currentSellerId, products: products, notification_hour: parseInt(hour)})
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(`✅ Отлично! Сохранено товаров: ${data.count}. Система будет анализировать цены каждый день в ${hour}:00 и отправлять рекомендации в Telegram.`);
-                    tempProducts = [];
-                    let productsHtml = document.getElementById('manual').querySelector('[id*="productsHtml"]');
-                    if (productsHtml) productsHtml.remove();
-                    document.getElementById('productSearch').value = '';
-                    document.getElementById('cost_price').value = '';
-                    document.getElementById('selling_price').value = '';
-                    loadSavedProducts();
-                }
-            })
-            .catch(err => alert('⚠️ Ошибка: ' + err.message));
+            if (alternatives.length > 0) {
+                let altHTML = '';
+                alternatives.forEach(alt => {
+                    altHTML += `<div class="alt-item"><span>${alt.name}</span><span class="alt-price">${alt.price.toLocaleString()}₸</span></div>`;
+                });
+                document.getElementById('alternatives_list').innerHTML = altHTML;
+                document.getElementById('alternatives_section').style.display = 'block';
+            }
+            
+            document.getElementById('results').style.display = 'block';
         }
-        
-        function downloadTemplate() {
-            const data = [
-                ['Название товара', 'Закупочная цена', 'ВАША цена', 'Минимальная цена', 'Доставка', 'Комиссия %', 'Kaspi Жұма'],
-                ['Apple iPhone 15 Pro 256GB', 750000, 900000, 870000, 700, 11, 'ДА'],
-                ['Samsung Galaxy S24 256GB', 680000, 820000, 750000, 700, 11, 'НЕТ'],
-                ['Corsair M65 RGB Elite', 25000, 45000, 40000, 700, 15, 'НЕТ']
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            ws['!cols'] = [{wch: 25}, {wch: 18}, {wch: 15}, {wch: 18}, {wch: 15}, {wch: 15}, {wch: 12}];
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Товары');
-            XLSX.writeFile(wb, 'MarketAnalyst_Template.xlsx');
-        }
-        
-        function handleDragOver(e) {
-            e.preventDefault();
-            document.getElementById('uploadArea').classList.add('active');
-        }
-        
-        function handleDragLeave(e) {
-            document.getElementById('uploadArea').classList.remove('active');
-        }
-        
-        function handleDrop(e) {
-            e.preventDefault();
-            document.getElementById('uploadArea').classList.remove('active');
-            if (e.dataTransfer.files.length > 0) processExcel(e.dataTransfer.files[0]);
-        }
-        
-        function handleFileSelect(e) {
-            if (e.target.files.length > 0) processExcel(e.target.files[0]);
-        }
-        
-        function processExcel(file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const data = new Uint8Array(event.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(worksheet);
-                    tempProducts = rows;
-                    
-                    let html = '';
-                    rows.forEach(p => {
-                        const cost = parseInt(p['Закупочная цена']) || 0;
-                        const price = parseInt(p['ВАША цена']) || 0;
-                        const delivery = parseInt(p['Доставка']) || 700;
-                        const commission = parseFloat(p['Комиссия %']) || 15;
-                        
-                        const profit = price - Math.round(price * (commission / 100)) - Math.round(price * 0.03) - delivery - cost;
-                        const margin = ((profit / price) * 100).toFixed(1);
-                        const status = profit < 0 ? '❌ УБЫТОК' : margin < 15 ? '⚠️ НИЗКО' : '✅ OK';
-                        const statusClass = profit < 0 ? 'error' : margin < 15 ? 'low' : 'ok';
-                        
-                        html += `<div class="item">
-                            <div class="item-left">
-                                <div class="item-name">${p['Название товара']}</div>
-                                <div class="item-details">Прибыль: ${profit.toLocaleString()}₸ | Маржа: ${margin}%</div>
-                            </div>
-                            <div class="status ${statusClass}">${status}</div>
-                        </div>`;
-                    });
-                    
-                    let excelCard = document.getElementById('excel');
-                    let resultsDiv = excelCard.querySelector('[id*="resultsDiv"]');
-                    if (!resultsDiv) {
-                        resultsDiv = document.createElement('div');
-                        resultsDiv.id = 'resultsDiv';
-                        resultsDiv.className = 'card';
-                        resultsDiv.style.marginTop = '20px';
-                        excelCard.appendChild(resultsDiv);
-                    }
-                    
-                    resultsDiv.innerHTML = `
-                        <h3 style="color: #f97316; margin-bottom: 16px;">✅ Загруженные товары (${rows.length}):</h3>
-                        ${html}
-                        <button class="btn btn-full" onclick="saveAllProducts()">💾 Сохранить все товары</button>
-                    `;
-                } catch (err) {
-                    alert('❌ Ошибка: ' + err.message);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-        
-        function saveNotificationTime() {
-            const hour = document.getElementById('notificationHour').value;
-            fetch('https://api.marketanalyst.kz/api/seller/set-notification-time', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({seller_id: currentSellerId, notification_hour: parseInt(hour)})
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('successMsg_settings').innerHTML = `✅ Время установлено на ${hour}:00`;
-                    document.getElementById('successMsg_settings').style.display = 'block';
-                    setTimeout(() => document.getElementById('successMsg_settings').style.display = 'none', 3000);
-                }
-            })
-            .catch(err => alert('⚠️ Ошибка: ' + err.message));
-        }
-        async function connectTelegram() {
-    const session = (await sb.auth.getSession()).data.session;
-    if (!session) { alert('Войдите в аккаунт'); return; }
-    
-    // Получаем seller_id
-    const r = await fetch(`${API}/api/seller/get-settings`, {
-        headers: {'Authorization': `Bearer ${session.access_token}`}
-    });
-    const data = await r.json();
-    const sellerId = data.seller_id;
-    
-    if (!sellerId) { alert('Ошибка получения ID'); return; }
-    
-    // Открываем бота с deep link
-    const botUrl = `https://t.me/marketanalyst_kz_bot?start=${sellerId}`;
-    window.open(botUrl, '_blank');
-    
-    document.getElementById('tgStatus').innerHTML = 
-        '<div style="color:#10b981">✅ Откройте бота и нажмите Start — уведомления будут подключены!</div>';
-}
-        async function connectTelegram() {
-    if (!currentSellerId) {
-        alert('Ошибка: не найден ID пользователя');
-        return;
-    }
-    
-    // Проверяем уже подключён ли
-    const r = await fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`);
-    const data = await r.json();
-    
-    if (data.telegram_chat_id) {
-        document.getElementById('tgStatus').innerHTML = 
-            '<div style="color:#10b981;font-size:12px">✅ Telegram уже подключён! Уведомления активны.</div>';
-        return;
-    }
-    
-    // Открываем бота с deep link
-    const botUrl = `https://t.me/marketanalyst_kz_bot?start=${currentSellerId}`;
-    window.open(botUrl, '_blank');
-    
-    document.getElementById('tgStatus').innerHTML = 
-        '<div style="color:#f97316;font-size:12px">⏳ Откройте бота и нажмите Start — уведомления будут подключены!</div>';
-}
-
-// Проверяем статус при загрузке
-window.addEventListener('load', () => {
-    setTimeout(async () => {
-        const r = await fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`);
-        const data = await r.json();
-        const el = document.getElementById('tgStatus');
-        if (el) {
-            el.innerHTML = data.telegram_chat_id 
-                ? '<div style="color:#10b981;font-size:12px">✅ Telegram подключён</div>'
-                : '<div style="color:#6b7280;font-size:12px">❌ Telegram не подключён</div>';
-        }
-    }, 1000);
-});
     </script>
 </body>
 </html>
+EOFHTML
+
+systemctl reload nginx
+echo "✅ seller.html обновлен"
