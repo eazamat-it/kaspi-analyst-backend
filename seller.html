@@ -220,13 +220,17 @@
             // Проверяем сессию Supabase
             const { data: { session } } = await sb.auth.getSession();
             if (session) {
-                // Вошёл через app.html — берём ID из сессии
+                // Вошёл — берём ID из сессии (одинаковый на всех устройствах)
                 currentSellerId = session.user.id;
                 document.getElementById('userEmail').textContent = session.user.email;
             } else {
-                // Не вошёл — редирект на app.html
-                window.location.href = 'app.html';
-                return;
+                // Не вошёл — гостевой режим через localStorage
+                currentSellerId = localStorage.getItem('seller_id');
+                if (!currentSellerId) {
+                    currentSellerId = 'user_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('seller_id', currentSellerId);
+                }
+                document.getElementById('userEmail').textContent = '';
             }
 
             fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`)
