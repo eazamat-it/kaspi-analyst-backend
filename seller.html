@@ -217,20 +217,25 @@
         let currentSellerId = null;
 
         window.addEventListener('load', async () => {
-            // Проверяем сессию Supabase
-            const { data: { session } } = await sb.auth.getSession();
-            if (session) {
-                // Вошёл — берём ID из сессии (одинаковый на всех устройствах)
-                currentSellerId = session.user.id;
-                document.getElementById('userEmail').textContent = session.user.email;
-            } else {
-                // Не вошёл — гостевой режим через localStorage
-                currentSellerId = localStorage.getItem('seller_id');
-                if (!currentSellerId) {
-                    currentSellerId = 'user_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('seller_id', currentSellerId);
-                }
-                document.getElementById('userEmail').textContent = '';
+           // Берём uid из URL (передаётся из app.html)
+    const urlParams = new URLSearchParams(window.location.search);
+    const uidFromUrl = urlParams.get('uid');
+    
+    if (uidFromUrl) {
+        currentSellerId = uidFromUrl;
+        localStorage.setItem('seller_id', uidFromUrl);
+    } else {
+        currentSellerId = localStorage.getItem('seller_id');
+        if (!currentSellerId) {
+            currentSellerId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('seller_id', currentSellerId);
+        }
+    }
+    
+    // Показываем email если есть сессия
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+        document.getElementById('userEmail').textContent = session.user.email;
             }
 
             fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`)
