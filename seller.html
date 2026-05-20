@@ -543,6 +543,43 @@
     document.getElementById('tgStatus').innerHTML = 
         '<div style="color:#10b981">✅ Откройте бота и нажмите Start — уведомления будут подключены!</div>';
 }
+        async function connectTelegram() {
+    if (!currentSellerId) {
+        alert('Ошибка: не найден ID пользователя');
+        return;
+    }
+    
+    // Проверяем уже подключён ли
+    const r = await fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`);
+    const data = await r.json();
+    
+    if (data.telegram_chat_id) {
+        document.getElementById('tgStatus').innerHTML = 
+            '<div style="color:#10b981;font-size:12px">✅ Telegram уже подключён! Уведомления активны.</div>';
+        return;
+    }
+    
+    // Открываем бота с deep link
+    const botUrl = `https://t.me/marketanalyst_kz_bot?start=${currentSellerId}`;
+    window.open(botUrl, '_blank');
+    
+    document.getElementById('tgStatus').innerHTML = 
+        '<div style="color:#f97316;font-size:12px">⏳ Откройте бота и нажмите Start — уведомления будут подключены!</div>';
+}
+
+// Проверяем статус при загрузке
+window.addEventListener('load', () => {
+    setTimeout(async () => {
+        const r = await fetch(`https://api.marketanalyst.kz/api/seller/get-settings?seller_id=${currentSellerId}`);
+        const data = await r.json();
+        const el = document.getElementById('tgStatus');
+        if (el) {
+            el.innerHTML = data.telegram_chat_id 
+                ? '<div style="color:#10b981;font-size:12px">✅ Telegram подключён</div>'
+                : '<div style="color:#6b7280;font-size:12px">❌ Telegram не подключён</div>';
+        }
+    }, 1000);
+});
     </script>
 </body>
 </html>
