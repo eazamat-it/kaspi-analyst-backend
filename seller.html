@@ -523,6 +523,26 @@
             })
             .catch(err => alert('⚠️ Ошибка: ' + err.message));
         }
+        async function connectTelegram() {
+    const session = (await sb.auth.getSession()).data.session;
+    if (!session) { alert('Войдите в аккаунт'); return; }
+    
+    // Получаем seller_id
+    const r = await fetch(`${API}/api/seller/get-settings`, {
+        headers: {'Authorization': `Bearer ${session.access_token}`}
+    });
+    const data = await r.json();
+    const sellerId = data.seller_id;
+    
+    if (!sellerId) { alert('Ошибка получения ID'); return; }
+    
+    // Открываем бота с deep link
+    const botUrl = `https://t.me/marketanalyst_kz_bot?start=${sellerId}`;
+    window.open(botUrl, '_blank');
+    
+    document.getElementById('tgStatus').innerHTML = 
+        '<div style="color:#10b981">✅ Откройте бота и нажмите Start — уведомления будут подключены!</div>';
+}
     </script>
 </body>
 </html>
