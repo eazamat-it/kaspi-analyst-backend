@@ -163,11 +163,50 @@ td{padding:9px 12px;border-top:1px solid #1e2a3a;font-size:12px}
       <button class="qbtn" onclick="setQ('Маска для лица')">Маска для лица</button>
     </div>
 
-    <div id="loading" style="display:none;text-align:center;padding:50px 20px" class="card">
+   <!-- <div id="loading" style="display:none;text-align:center;padding:50px 20px" class="card">
       <div style="font-size:36px;margin-bottom:12px;animation:pulse 1.4s ease infinite">🤖</div>
       <div style="color:#f97316;font-weight:800;font-size:15px;margin-bottom:6px">Анализируем рынок...</div>
       <div style="color:#374151;font-size:12px">AI изучает нишу и готовит рекомендации</div>
+    </div>-->
+
+      <div id="loading" style="display:none;padding:28px 20px" class="card">
+  <div style="text-align:center;margin-bottom:20px">
+    <div id="ld-icon" style="font-size:2.2rem;margin-bottom:10px">🔍</div>
+    <div id="ld-title" style="font-size:15px;font-weight:700;color:#f3f4f6;margin-bottom:4px">Ищем товары в выбранной нише...</div>
+    <div id="ld-sub" style="font-size:12px;color:#9ca3af">Изучаем цены и конкурентов</div>
+  </div>
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span id="ld-step" style="font-size:11px;color:#6b7280">Шаг 1 из 4</span>
+      <span id="ld-pct" style="font-size:11px;font-weight:600;color:#f97316">10%</span>
     </div>
+    <div style="height:5px;background:#1e2a3a;border-radius:99px;overflow:hidden">
+      <div id="ld-bar" style="height:100%;width:10%;background:#f97316;border-radius:99px;transition:width 0.6s ease"></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+    <div class="ld-s" data-i="0" style="text-align:center;padding:10px 4px;border-radius:8px;border:1.5px solid #f97316;background:#0f1419;transition:all 0.3s">
+      <div style="font-size:16px;margin-bottom:3px">🔍</div>
+      <div style="font-size:10px;color:#9ca3af;line-height:1.3">Поиск<br>товаров</div>
+    </div>
+    <div class="ld-s" data-i="1" style="text-align:center;padding:10px 4px;border-radius:8px;border:1px solid #1e2a3a;background:#060b14;transition:all 0.3s">
+      <div style="font-size:16px;margin-bottom:3px">📊</div>
+      <div style="font-size:10px;color:#9ca3af;line-height:1.3">Анализ<br>цен</div>
+    </div>
+    <div class="ld-s" data-i="2" style="text-align:center;padding:10px 4px;border-radius:8px;border:1px solid #1e2a3a;background:#060b14;transition:all 0.3s">
+      <div style="font-size:16px;margin-bottom:3px">🤖</div>
+      <div style="font-size:10px;color:#9ca3af;line-height:1.3">AI<br>анализ</div>
+    </div>
+    <div class="ld-s" data-i="3" style="text-align:center;padding:10px 4px;border-radius:8px;border:1px solid #1e2a3a;background:#060b14;transition:all 0.3s">
+      <div style="font-size:16px;margin-bottom:3px">✨</div>
+      <div style="font-size:10px;color:#9ca3af;line-height:1.3">Готовим<br>отчёт</div>
+    </div>
+  </div>
+  <div id="ld-fact" style="padding:10px 14px;background:#0f1419;border-radius:8px;border-left:3px solid #f97316;font-size:12px;color:#9ca3af;transition:opacity 0.4s">
+    💡 Средняя маржа на маркетплейсе — 18-25% после всех расходов
+  </div>
+</div>
+      
     <div id="err" style="display:none" class="card">
       <div style="color:#ef4444;font-weight:700;margin-bottom:6px">⚠️ Ошибка</div>
       <div id="errmsg" style="color:#6b7280;font-size:13px;margin-bottom:10px"></div>
@@ -714,30 +753,30 @@ async function run() {
     const q = document.getElementById('q').value.trim();
     if (!q) return;
     show('loading');
+    startLoadingAnimation(); // ← ДОБАВИТЬ СЮДА
     try {
         const session = (await sb.auth.getSession()).data.session;
         const token = session?.access_token || null;
-
         const r = await fetch(`${API}/analyze`, {
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({query: q, token: token})
         });
-
-        // Обрабатываем лимит на стороне сервера
         if (r.status === 429) {
+            stopLoadingAnimation(); // ← ДОБАВИТЬ СЮДА
             const err = await r.json();
             show('empty');
             openAuthModal();
             showMsg(err.detail?.message || 'Лимит исчерпан. Войдите для продолжения.', 'error');
             return;
         }
-
         if (!r.ok) throw new Error(`Ошибка сервера ${r.status}`);
         D = await r.json();
+        stopLoadingAnimation(); // ← ДОБАВИТЬ СЮДА
         incrementUsed(); renderUserBar();
         await saveHistory(q, D.ai||{}, D.stats||{});
         renderResult('niche'); show('result');
     } catch(e) {
+        stopLoadingAnimation(); // ← ДОБАВИТЬ СЮДА
         document.getElementById('errmsg').textContent = e.message||'Неизвестная ошибка';
         show('err');
     }
@@ -1220,6 +1259,79 @@ function downloadResults() {
     const { data: { session } } = await sb.auth.getSession();
     const uid = session?.user?.id || localStorage.getItem('seller_id') || '';
     window.location.href = `seller.html?uid=${uid}`;
+}
+
+    const _ldSteps = [
+  {icon:'🔍', title:'Ищем товары в выбранной нише...', sub:'Собираем данные о ценах и конкурентах', pct:15, label:'Шаг 1 из 4', ms:5000},
+  {icon:'📊', title:'Анализируем ценовые сегменты...', sub:'Изучаем маржинальность и спрос', pct:50, label:'Шаг 2 из 4', ms:7000},
+  {icon:'🤖', title:'AI анализирует нишу...', sub:'Рассчитываем потенциал и риски входа', pct:80, label:'Шаг 3 из 4', ms:6000},
+  {icon:'✨', title:'Готовим отчёт...', sub:'Формируем рекомендации для вас', pct:95, label:'Шаг 4 из 4', ms:99999},
+];
+const _ldFacts = [
+  '💡 Средняя маржа на маркетплейсе — 18-25% после всех расходов',
+  '📈 Рынок e-commerce Казахстана вырос на 40% за 2 года',
+  '🏆 Самые прибыльные ниши — аксессуары, товары для дома, спорт',
+  '💰 Комиссия площадки зависит от категории товара',
+  '🔥 Отзывы — главный фактор роста продаж на маркетплейсе',
+  '📦 Новые продавцы часто недооценивают расходы на доставку',
+];
+let _ldFactIdx = 0, _ldFactTimer = null, _ldStepTimer = null;
+
+function startLoadingAnimation() {
+  const icons = ['🔍','📊','🤖','✨'];
+  document.querySelectorAll('.ld-s').forEach((el, i) => {
+    el.querySelector('div:first-child').textContent = icons[i];
+    el.style.background = i === 0 ? '#0f1419' : '#060b14';
+    el.style.border = i === 0 ? '1.5px solid #f97316' : '1px solid #1e2a3a';
+    el.style.transform = 'scale(1)';
+  });
+
+  _ldFactIdx = 0;
+  clearInterval(_ldFactTimer);
+  clearTimeout(_ldStepTimer);
+
+  _ldFactTimer = setInterval(() => {
+    const el = document.getElementById('ld-fact');
+    el.style.opacity = '0';
+    setTimeout(() => {
+      _ldFactIdx = (_ldFactIdx + 1) % _ldFacts.length;
+      el.textContent = _ldFacts[_ldFactIdx];
+      el.style.opacity = '1';
+    }, 400);
+  }, 3500);
+
+  let si = 0;
+  function nextStep() {
+    const s = _ldSteps[si];
+    document.getElementById('ld-icon').textContent = s.icon;
+    document.getElementById('ld-title').textContent = s.title;
+    document.getElementById('ld-sub').textContent = s.sub;
+    document.getElementById('ld-bar').style.width = s.pct + '%';
+    document.getElementById('ld-pct').textContent = s.pct + '%';
+    document.getElementById('ld-step').textContent = s.label;
+    document.querySelectorAll('.ld-s').forEach((el, idx) => {
+      const done = idx < si;
+      const active = idx === si;
+      el.style.background = done ? 'rgba(16,185,129,0.08)' : active ? '#0f1419' : '#060b14';
+      el.style.border = done ? '1px solid #10b981' : active ? '1.5px solid #f97316' : '1px solid #1e2a3a';
+      el.style.transform = active ? 'scale(1.05)' : 'scale(1)';
+      if (done) el.querySelector('div:first-child').textContent = '✅';
+    });
+    if (si < _ldSteps.length - 1) {
+      _ldStepTimer = setTimeout(() => { si++; nextStep(); }, s.ms);
+    }
+  }
+  nextStep();
+}
+
+function stopLoadingAnimation() {
+  clearInterval(_ldFactTimer);
+  clearTimeout(_ldStepTimer);
+  document.getElementById('ld-bar').style.width = '100%';
+  document.getElementById('ld-pct').textContent = '100%';
+  document.getElementById('ld-icon').textContent = '✅';
+  document.getElementById('ld-title').textContent = 'Анализ готов!';
+  document.getElementById('ld-sub').textContent = '';
 }
 
 init();
