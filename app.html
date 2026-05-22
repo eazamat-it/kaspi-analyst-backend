@@ -1063,12 +1063,28 @@ function renderResult(tabId){
         ${risks.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:10px">⚠️ РИСКИ</div>${risks.map(r=>`<div style="padding:6px 0;border-top:1px solid #1e2a3a;font-size:12px;color:#d1d5db">• ${r}</div>`).join('')}</div>`:''}
         ${keywords.length?`<div class="card" style="margin-top:15px"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:10px">🔑 КЛЮЧЕВЫЕ СЛОВА</div><div style="display:flex;flex-wrap:wrap;gap:6px">${keywords.map(k=>`<span class="pill" style="background:#1e2a3a;color:#9ca3af">${k}</span>`).join('')}</div></div>`:''}`;
     } else {
-        content+=`<div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🏆 КОНКУРЕНТЫ В НИШЕ (${competitors.length})</div>
-            <table><thead><tr><th>ТОВАР</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ПРОДАВЕЦ</th></tr></thead>
-            <tbody>${competitors.length?competitors.map((c,i)=>{
-                const sellerName = (c.sellers&&c.sellers.length>0) ? c.sellers[0].merchantName : (c.seller||'—');
-                return `<tr><td><a href="${c.url||'#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name||'—'}</a></td><td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td><td><span style="color:#f59e0b">★</span> ${c.rating??'—'}</td><td>${fmt(c.reviews)}</td><td style="color:#6b7280;font-size:11px">${sellerName}</td></tr>`;
-            }).join(''):`<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Нет данных</td></tr>`}</tbody></table></div>`;
+        const isSingleProduct = competitors.length === 1 && competitors[0].sellers && competitors[0].sellers.length > 0;
+        if (isSingleProduct) {
+            const product = competitors[0];
+            const sellers = product.sellers;
+            content+=`<div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:4px">🏆 ПРОДАВЦЫ ТОВАРА (${sellers.length})</div>
+                <div style="font-size:11px;color:#4b5563;margin-bottom:12px">${product.name}</div>
+                <table><thead><tr><th>ПРОДАВЕЦ</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ССЫЛКА</th></tr></thead>
+                <tbody>${sellers.map((s,i)=>`<tr>
+                    <td style="font-weight:600;color:#e5e7eb">${i+1}. ${s.merchantName||'—'}</td>
+                    <td style="white-space:nowrap;font-weight:700">${fmt(s.price)} ₸</td>
+                    <td><span style="color:#f59e0b">★</span> ${s.rating||'—'}</td>
+                    <td>${fmt(s.reviews)}</td>
+                    <td><a href="${product.url||'#'}" target="_blank" style="color:#f97316;font-size:11px">Kaspi →</a></td>
+                </tr>`).join('')}</tbody></table></div>`;
+        } else {
+            content+=`<div class="card"><div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">🏆 КОНКУРЕНТЫ В НИШЕ (${competitors.length})</div>
+                <table><thead><tr><th>ТОВАР</th><th>ЦЕНА</th><th>РЕЙТИНГ</th><th>ОТЗЫВЫ</th><th>ПРОДАВЕЦ</th></tr></thead>
+                <tbody>${competitors.length?competitors.map((c,i)=>{
+                    const sellerName=(c.sellers&&c.sellers.length>0)?c.sellers[0].merchantName:(c.seller||'—');
+                    return `<tr><td><a href="${c.url||'#'}" target="_blank" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${c.name||'—'}</a></td><td style="white-space:nowrap;font-weight:700">${fmt(c.price)} ₸</td><td><span style="color:#f59e0b">★</span> ${c.rating??'—'}</td><td>${fmt(c.reviews)}</td><td style="color:#6b7280;font-size:11px">${sellerName}</td></tr>`;
+                }).join(''):`<tr><td colspan="5" style="text-align:center;color:#4b5563;padding:20px">Нет данных</td></tr>`}</tbody></table></div>`;
+        }
     }
     document.getElementById('result').innerHTML=content;
 }
@@ -1607,15 +1623,6 @@ function renderCompare(q1, d1, q2, d2, aiVerdict) {
       </div>
     </div>`;
   document.getElementById('compareResult').style.display = 'block';
-}
-
-function toggleSellers(i) {
-    const row = document.getElementById(`sellers-row-${i}`);
-    const toggle = document.getElementById(`sellers-toggle-${i}`);
-    if (!row) return;
-    const isOpen = row.style.display !== 'none';
-    row.style.display = isOpen ? 'none' : 'table-row';
-    if (toggle) toggle.textContent = toggle.textContent.replace(isOpen ? '▲' : '▼', isOpen ? '▼' : '▲');
 }
 
 init();
