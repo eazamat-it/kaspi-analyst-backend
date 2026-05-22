@@ -734,6 +734,16 @@ function setQ(v) { document.getElementById('q').value=v; run(); }
 async function saveHistory(query, ai, stats) {
     if (!currentUser) return;
     try {
+        // Не дублируем если такой запрос уже есть сегодня
+        const today = new Date().toISOString().split('T')[0];
+        const { data: existing } = await sb.from('search_history')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .eq('query', query)
+            .gte('created_at', today)
+            .limit(1);
+        if (existing && existing.length > 0) return;
+        
         await sb.from('search_history').insert({
             user_id: currentUser.id, query,
             verdict: ai.verdict||null, niche_score: ai.nicheScore||null,
