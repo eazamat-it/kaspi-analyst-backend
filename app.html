@@ -935,7 +935,6 @@ function renderResult(tabId){
         <p style="color:#9ca3af;font-size:13px">${verdictText}</p>
         ${ai?.recommendations?`<div style="font-size:12px;color:#9ca3af;margin-top:12px;border-top:1px solid #1e2a3a;padding-top:12px">${ai.recommendations.map((r,i)=>`<div style="margin-bottom:6px">• ${r}</div>`).join('')}</div>`:''}
     </div>
-   <div id="ai-chat-wrap"></div>
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:15px" class="stats-grid">
         <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">ТОВАРОВ В НИШЕ</div><div style="font-size:22px;font-weight:900;color:#f97316">${stats.totalFound??0}</div></div>
         <div class="card" style="text-align:center"><div style="font-size:10px;color:#4b5563;margin-bottom:4px">СРЕДНЯЯ ЦЕНА</div><div style="font-size:18px;font-weight:900">${fmt(stats.avgPrice)} ₸</div></div>
@@ -1219,8 +1218,7 @@ function initChat() {
     + 'onkeydown="if(event.key===\'Enter\')sendChat()" onfocus="this.style.borderColor=\'#f97316\'" onblur="this.style.borderColor=\'#2d3e4f\'">'
     + '<button onclick="sendChat()" style="padding:0 16px;background:#f97316;color:#fff;border-radius:8px;font-size:12px;font-weight:700;height:38px;white-space:nowrap">Спросить</button>'
     + '</div></div>';
-    const wrap = document.getElementById('ai-chat-wrap');
-  if (wrap) wrap.innerHTML = chatHtml;
+  result.insertAdjacentHTML('beforeend', chatHtml);
 }
 
 function askChat(text) {
